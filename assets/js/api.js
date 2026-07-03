@@ -1,6 +1,6 @@
 // Escalex — cliente da API (Apps Script Web App)
 // Troque API_URL pela URL de implantação do seu Web App (.../exec)
-const API_URL = 'COLE_AQUI_A_URL_DO_APPS_SCRIPT_WEB_APP';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx81Auc-BuhXyA_PaCJIbgfj8-1IwR25ZLx6QDo3WaVvyAL5VN7nIlYy19EgFlIFRUL/exec';
 
 const EscalexAPI = {
   async get(action, params) {
