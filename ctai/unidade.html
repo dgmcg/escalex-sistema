@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalex CTAI — Unidade</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  .container { max-width: 760px; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .tab-btn {
+    flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--border);
+    background:#fff; font-weight:600; font-size:0.85rem; color: var(--ink-soft); cursor:pointer;
+  }
+  .tab-btn.active { background: var(--navy-700); color:#fff; border-color: var(--navy-700); }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  .esp-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .esp-row:last-child { border-bottom:none; }
+  .esp-row .nome { flex:1; font-weight:500; }
+  .esp-row input { width:64px; text-align:center; padding:6px; border-radius:8px; border:1px solid var(--border); }
+
+  .usuario-row { padding:10px 0; border-bottom:1px solid var(--border); font-size:0.88rem; }
+  .usuario-row:last-child { border-bottom:none; }
+  .usuario-row .nome { font-weight:600; }
+  .usuario-row .meta { color: var(--ink-soft); font-size:0.78rem; }
+  .usuario-row button { margin-top:6px; font-size:0.75rem; padding:5px 10px; border-radius:8px; border:1px solid var(--border); background:#fff; }
+
+  .plantao-card { border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .plantao-card .cabecalho { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .comparacao-item { display:flex; justify-content:space-between; font-size:0.85rem; padding:5px 0; }
+  .comparacao-item .status-igual { color: var(--success); }
+  .comparacao-item .status-faltante { color: var(--danger); font-weight:600; }
+  .comparacao-item .status-excedente { color: var(--warning); font-weight:600; }
+  .obs-usuario { background:#fff8e8; border-radius:8px; padding:8px 10px; font-size:0.82rem; margin-top:8px; }
+  .val-actions { display:flex; gap:8px; margin-top:12px; }
+  .val-actions button { flex:1; font-size:0.8rem; padding:9px; border-radius:8px; border:1px solid var(--border); background:#fff; }
+  .val-actions .btn-total { background: var(--success); color:#fff; border-color: var(--success); }
+  .val-actions .btn-ressalva { background: var(--warning); color:#fff; border-color: var(--warning); }
+  .ja-fiscalizado { font-size:0.78rem; color: var(--success); font-weight:600; }
+  .fotos-mini { display:flex; gap:8px; margin-top:8px; }
+  .fotos-mini a { font-size:0.78rem; color: var(--blue-accent); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <h1 id="nomeUnidadeTopo">ESCALEX</h1>
+    <div class="subtitle">Gestão CTAI</div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="fiscalizacao">Fiscalização</button>
+    <button class="tab-btn" data-tab="config">Configurações</button>
+  </div>
+
+  <div id="alertBox"></div>
+
+  <!-- FISCALIZAÇÃO -->
+  <div class="tab-content active" id="tab-fiscalizacao">
+    <div class="card">
+      <div class="field" style="margin-bottom:0;">
+        <label for="dataFiscalizacao">Data</label>
+        <input type="date" id="dataFiscalizacao">
+      </div>
+    </div>
+    <div id="listaPlantoes">Carregando plantões…</div>
+  </div>
+
+  <!-- CONFIGURAÇÕES -->
+  <div class="tab-content" id="tab-config">
+    <div class="card">
+      <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Especialidades e quantitativo previsto</h3>
+      <div id="listaEspecialidadesConfig">Carregando…</div>
+      <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+      <div class="field">
+        <label for="novaEspNome">Nova especialidade</label>
+        <input type="text" id="novaEspNome" placeholder="Ex.: Ortopedia">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1;">
+          <label for="novaEspDiurno">Previsto diurno</label>
+          <input type="number" id="novaEspDiurno" min="0" value="0">
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="novaEspNoturno">Previsto noturno</label>
+          <input type="number" id="novaEspNoturno" min="0" value="0">
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="btnAddEspecialidade">Adicionar especialidade</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Usuários do aplicativo</h3>
+      <div id="listaUsuariosConfig">Carregando…</div>
+      <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+      <div class="field">
+        <label for="novoUsrNome">Nome completo</label>
+        <input type="text" id="novoUsrNome" placeholder="Nome e sobrenome">
+      </div>
+      <div class="field">
+        <label for="novoUsrMatricula">Matrícula</label>
+        <input type="text" id="novoUsrMatricula">
+      </div>
+      <div class="field">
+        <label for="novoUsrConselho">Registro do conselho (opcional)</label>
+        <input type="text" id="novoUsrConselho">
+      </div>
+      <div class="field">
+        <label for="novoUsrFuncao">Função</label>
+        <input type="text" id="novoUsrFuncao">
+      </div>
+      <button class="btn btn-secondary" id="btnAddUsuario">Cadastrar usuário (senha inicial: 123)</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="assets/js/unidade.js"></script>
+</body>
+</html>

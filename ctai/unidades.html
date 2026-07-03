@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalex CTAI — Unidades</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  .container { max-width: 720px; }
+  .unidade-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; border-radius:12px; border:1px solid var(--border);
+    background:#fff; margin-bottom:10px; cursor:pointer; transition: border-color .15s;
+  }
+  .unidade-item:hover { border-color: var(--blue-accent); }
+  .unidade-item .nome { font-weight:600; color: var(--navy-900); }
+  .unidade-item .tipo { font-size:0.78rem; color: var(--ink-soft); }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; }
+  .toolbar h2 { font-family: var(--font-display); color: var(--navy-900); margin:0; font-size:1.3rem; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <h1>ESCALEX</h1>
+    <div class="subtitle">Gestão CTAI</div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="toolbar">
+    <h2>Unidades</h2>
+    <button class="btn btn-secondary" style="width:auto;" id="btnNovaUnidade">+ Nova unidade</button>
+  </div>
+
+  <div id="formNovaUnidade" class="card" style="display:none;">
+    <div class="field">
+      <label for="novoNome">Nome da unidade</label>
+      <input type="text" id="novoNome" placeholder="Ex.: UPA Coqueiral">
+    </div>
+    <div class="field">
+      <label for="novoTipo">Tipo</label>
+      <select id="novoTipo" style="width:100%; padding:12px; border-radius:10px; border:1.5px solid var(--border);">
+        <option value="Hospital">Hospital</option>
+        <option value="UPA">UPA</option>
+        <option value="UPAE">UPAE</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="btnSalvarUnidade">Salvar unidade</button>
+  </div>
+
+  <div id="alertBox"></div>
+  <div id="listaUnidades">Carregando unidades…</div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="assets/js/unidades.js"></script>
+</body>
+</html>
