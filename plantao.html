@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Escalex — Registrar Plantão</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   .canvas-actions { display: flex; gap: 10px; margin-top: 8px; }
@@ -46,6 +47,7 @@
       <span class="geo-dot pending" id="geoDot"></span>
       <span id="geoTexto">Obtendo localização…</span>
     </div>
+    <div id="geoMap" style="display:none; height:150px; border-radius:10px; margin-top:10px; border:1px solid var(--border);"></div>
   </div>
 
   <form id="formPlantao">
@@ -73,7 +75,12 @@
           </div>
         </div>
         <div id="fotoNovaBloco">
-          <input type="file" id="inputFoto" accept="image/*" capture="environment">
+          <div class="canvas-actions" style="margin-top:0;">
+            <button type="button" id="btnTirarFoto" class="btn btn-secondary" style="width:auto; flex:1;">📷 Tirar foto agora</button>
+            <button type="button" id="btnEscolherGaleria" class="btn btn-secondary" style="width:auto; flex:1;">🖼️ Escolher da galeria</button>
+          </div>
+          <input type="file" id="inputFotoCamera" accept="image/*" capture="environment" style="display:none;">
+          <input type="file" id="inputFotoGaleria" accept="image/*" style="display:none;">
           <img id="previewFoto" class="photo-preview">
         </div>
       </div>
@@ -93,6 +100,7 @@
   </form>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/signature.js"></script>
 <script src="assets/js/plantao.js"></script>
