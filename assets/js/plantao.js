@@ -3,6 +3,8 @@ let signaturePad = null;
 let geolocalizacaoAtual = null;
 let fotoBase64Nova = null;
 let usarFotoAnterior = false;
+let mapaLeaflet = null;
+let marcadorLeaflet = null;
 
 const usuario = EscalexSession.obter();
 if (!usuario) window.location.href = 'index.html';
@@ -43,9 +45,12 @@ function capturarGeolocalizacao() {
 
   navigator.geolocation.getCurrentPosition(
     function (pos) {
-      geolocalizacaoAtual = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      geolocalizacaoAtual = `${lat.toFixed(6)},${lng.toFixed(6)}`;
       dot.className = 'geo-dot ok';
       texto.textContent = 'Localização capturada.';
+      mostrarMapa(lat, lng);
     },
     function () {
       dot.className = 'geo-dot';
@@ -53,6 +58,26 @@ function capturarGeolocalizacao() {
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
+}
+
+function mostrarMapa(lat, lng) {
+  const container = document.getElementById('geoMap');
+  container.style.display = 'block';
+
+  if (!mapaLeaflet) {
+    mapaLeaflet = L.map('geoMap', { zoomControl: false, attributionControl: false }).setView([lat, lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(mapaLeaflet);
+    marcadorLeaflet = L.marker([lat, lng]).addTo(mapaLeaflet);
+  } else {
+    mapaLeaflet.setView([lat, lng], 16);
+    marcadorLeaflet.setLatLng([lat, lng]);
+  }
+
+  // o container começa com display:none, então o Leaflet calcula o tamanho
+  // errado até ser exibido — força recalcular depois de renderizar.
+  setTimeout(function () { mapaLeaflet.invalidateSize(); }, 150);
 }
 
 function montarTela() {
@@ -109,7 +134,14 @@ document.getElementById('btnNovaFoto').addEventListener('click', function () {
   document.getElementById('fotoNovaBloco').style.display = 'block';
 });
 
-document.getElementById('inputFoto').addEventListener('change', function (ev) {
+document.getElementById('btnTirarFoto').addEventListener('click', function () {
+  document.getElementById('inputFotoCamera').click();
+});
+document.getElementById('btnEscolherGaleria').addEventListener('click', function () {
+  document.getElementById('inputFotoGaleria').click();
+});
+
+function processarArquivoFoto(ev) {
   const file = ev.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -120,7 +152,10 @@ document.getElementById('inputFoto').addEventListener('change', function (ev) {
     preview.style.display = 'block';
   };
   reader.readAsDataURL(file);
-});
+}
+
+document.getElementById('inputFotoCamera').addEventListener('change', processarArquivoFoto);
+document.getElementById('inputFotoGaleria').addEventListener('change', processarArquivoFoto);
 
 document.getElementById('btnLimparAssinatura').addEventListener('click', function () {
   signaturePad.limpar();
