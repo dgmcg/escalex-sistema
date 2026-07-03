@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escalex — Registrar Plantão</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .canvas-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .canvas-actions button { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: #fff; }
+  .qty-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .qty-row label { flex: 1; font-size: 0.9rem; font-weight: 500; margin: 0; }
+  .qty-row input { width: 88px; text-align: center; }
+  #loadingScreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 50; font-size: 0.9rem; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">Carregando plantão…</div>
+
+<div class="topbar">
+  <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1.6"/>
+    <path d="M3 9H21" stroke="#fff" stroke-width="1.6"/>
+    <path d="M8 2.5V5.5M16 2.5V5.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>
+  <div>
+    <h1>ESCALEX</h1>
+    <div class="subtitle" id="unidadeNome">carregando unidade...</div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="alertBox"></div>
+
+  <div class="card" style="text-align:center;">
+    <span class="badge" id="badgeTurno">—</span>
+    <div class="hint" id="dataHoraAtual" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="readonly-block" id="blocoAutomatico">
+    <div><strong id="roNome">—</strong> <span id="roMatricula"></span></div>
+    <div>Registrado em: <span id="roDataHora">—</span></div>
+    <div class="geo-status">
+      <span class="geo-dot pending" id="geoDot"></span>
+      <span id="geoTexto">Obtendo localização…</span>
+    </div>
+  </div>
+
+  <form id="formPlantao">
+    <div class="card">
+      <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Profissionais presentes por especialidade</h3>
+      <div id="listaEspecialidades"><!-- preenchido via JS --></div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label for="observacao">Observação</label>
+        <textarea id="observacao" rows="3" placeholder="Alguma informação relevante sobre este plantão?"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Foto da escala</label>
+        <div id="fotoAnteriorBloco" style="display:none;">
+          <img id="fotoAnteriorImg" class="photo-preview" style="display:block;">
+          <div class="hint previous">Esta é a foto do último registro. Ela ainda é válida?</div>
+          <div class="canvas-actions">
+            <button type="button" id="btnValidarFoto">Sim, ainda válida</button>
+            <button type="button" id="btnNovaFoto">Enviar nova foto</button>
+          </div>
+        </div>
+        <div id="fotoNovaBloco">
+          <input type="file" id="inputFoto" accept="image/*" capture="environment">
+          <img id="previewFoto" class="photo-preview">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Assinatura</label>
+        <canvas id="signaturePad" class="signature-pad"></canvas>
+        <div class="canvas-actions">
+          <button type="button" id="btnLimparAssinatura">Limpar assinatura</button>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" id="btnSalvar">Salvar registro do plantão</button>
+  </form>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/signature.js"></script>
+<script src="assets/js/plantao.js"></script>
+</body>
+</html>

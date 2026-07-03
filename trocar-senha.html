@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalex — Trocar Senha</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <h1>ESCALEX</h1>
+    <div class="subtitle">Defina uma nova senha</div>
+  </div>
+</div>
+<div class="container">
+  <div id="alertBox"></div>
+  <div class="card">
+    <p class="hint" style="margin-top:0;">Este é seu primeiro acesso ou uma redefinição. Por segurança, defina uma nova senha antes de continuar.</p>
+    <form id="formTrocarSenha">
+      <div class="field">
+        <label for="senhaAtual">Senha atual</label>
+        <input type="password" id="senhaAtual" required>
+      </div>
+      <div class="field">
+        <label for="senhaNova">Nova senha</label>
+        <input type="password" id="senhaNova" minlength="6" required>
+      </div>
+      <div class="field">
+        <label for="senhaNovaConfirma">Confirme a nova senha</label>
+        <input type="password" id="senhaNovaConfirma" minlength="6" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Salvar nova senha</button>
+    </form>
+  </div>
+</div>
+<script src="assets/js/api.js"></script>
+<script>
+  const usuario = EscalexSession.obter();
+  if (!usuario) window.location.href = 'index.html';
+
+  document.getElementById('formTrocarSenha').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    const nova = document.getElementById('senhaNova').value;
+    const confirma = document.getElementById('senhaNovaConfirma').value;
+    const alertBox = document.getElementById('alertBox');
+
+    if (nova !== confirma) {
+      alertBox.innerHTML = '<div class="alert alert-error">As senhas não coincidem.</div>';
+      return;
+    }
+
+    const resp = await EscalexAPI.post('trocarSenha', {
+      id_usuario: usuario.id_usuario,
+      senhaAtual: document.getElementById('senhaAtual').value,
+      senhaNova: nova,
+      tipo: 'usuario'
+    });
+
+    if (!resp.ok) {
+      alertBox.innerHTML = `<div class="alert alert-error">${resp.erro}</div>`;
+      return;
+    }
+
+    window.location.href = 'plantao.html';
+  });
+</script>
+</body>
+</html>
