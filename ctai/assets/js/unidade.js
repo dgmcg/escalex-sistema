@@ -364,3 +364,49 @@ async function validar(idPlantao, tipo) {
 
 carregarDetalhe();
 carregarFiscalizacao();
+
+// --- relatórios ---
+const hojeStr = new Date().toISOString().slice(0, 10);
+const seteDiasAtras = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+document.getElementById('relatorioInicio').value = seteDiasAtras;
+document.getElementById('relatorioFim').value = hojeStr;
+
+document.getElementById('btnRelatorioPDF').addEventListener('click', function () {
+  gerarRelatorio('gerarRelatorioPDF', this, '📄 Gerar PDF');
+});
+document.getElementById('btnRelatorioPlanilha').addEventListener('click', function () {
+  gerarRelatorio('gerarRelatorioPlanilha', this, '📊 Gerar Planilha');
+});
+
+async function gerarRelatorio(acao, botao, textoOriginal) {
+  const dataInicio = document.getElementById('relatorioInicio').value;
+  const dataFim = document.getElementById('relatorioFim').value;
+  const resultado = document.getElementById('relatorioResultado');
+
+  if (!dataInicio || !dataFim) {
+    resultado.innerHTML = '<div class="alert alert-error">Selecione o período (de/até).</div>';
+    return;
+  }
+  if (dataInicio > dataFim) {
+    resultado.innerHTML = '<div class="alert alert-error">A data "De" precisa ser antes da data "Até".</div>';
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = 'Gerando…';
+  resultado.innerHTML = '<div class="hint">Isso pode levar alguns segundos, dependendo do tamanho do período.</div>';
+
+  try {
+    const resp = await EscalexAPI.post(acao, { dados: { id_unidade: idUnidade, dataInicio, dataFim } });
+    if (!resp.ok) {
+      resultado.innerHTML = `<div class="alert alert-error">${resp.erro}</div>`;
+      return;
+    }
+    resultado.innerHTML = `<div class="alert alert-success">Relatório gerado: <a href="${resp.data.url}" target="_blank">${resp.data.nomeArquivo}</a></div>`;
+  } catch (err) {
+    resultado.innerHTML = '<div class="alert alert-error">Falha de conexão ao gerar o relatório.</div>';
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
+}
