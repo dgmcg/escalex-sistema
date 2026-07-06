@@ -159,55 +159,121 @@ async function carregarFiscalizacao() {
     return;
   }
 
-  if (resp.data.plantoes.length === 0) {
-    container.innerHTML = '<div class="hint">Nenhum plantão registrado nesta data.</div>';
-    return;
-  }
-
-  container.innerHTML = resp.data.plantoes.map(renderizarPlantaoCard).join('');
+  container.innerHTML = resp.data.turnos.map(renderizarTurnoCard).join('');
 }
 
-function renderizarPlantaoCard(p) {
-  const comparacaoHtml = p.comparacao.map(function (c) {
-    const labelStatus = { igual: 'igual ao previsto', faltante: 'abaixo do previsto', excedente: 'acima do previsto' }[c.status];
+const STATUS_ICONE = { verde: '✓', laranja: '⚠️', vermelho: '✗' };
+const STATUS_LABEL = { verde: 'Verificado', laranja: 'Atenção', vermelho: 'Incompleto' };
+
+function renderizarTurnoCard(t) {
+  const tituloTurno = t.turno === 'diurno' ? 'Diurno (07h–19h)' : 'Noturno (19h–07h)';
+
+  if (!t.temRegistro && !t.emAndamento) {
     return `
-      <div class="comparacao-item">
-        <span>${c.especialidade}</span>
-        <span class="status-${c.status}">${c.registrado} / ${c.previsto ?? '—'} (${labelStatus})</span>
+      <div class="plantao-card">
+        <div class="cabecalho">
+          <span class="badge badge-${t.turno}">${tituloTurno}</span>
+          <span class="status-vermelho">✗ Nenhum registro — turno encerrado sem preenchimento</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const especialidadesHtml = t.especialidades.map(function (esp) {
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <strong style="font-size:0.88rem;">${esp.nome}</strong>
+          <span class="status-${esp.statusCor}" style="font-weight:700; font-size:0.82rem;">
+            ${STATUS_ICONE[esp.statusCor]} ${esp.percentual.toFixed(2).replace('.', ',')}% — ${STATUS_LABEL[esp.statusCor]}
+          </span>
+        </div>
+        ${gerarGraficoSVG(esp, t.intervaloInicio, t.intervaloFim)}
+        <div class="hint" style="margin-top:2px;">Previsto: ${esp.previsto}</div>
       </div>
     `;
   }).join('');
 
-  const obsHtml = p.observacao ? `<div class="obs-usuario">💬 ${p.observacao}</div>` : '';
+  const observacoesHtml = t.observacoes.length
+    ? t.observacoes.map(function (o) {
+        return `<div class="obs-usuario">💬 ${o.texto} <span class="hint" style="margin:0;">(${new Date(o.registrado_em).toLocaleString('pt-BR')})</span></div>`;
+      }).join('')
+    : '';
 
   const fotosHtml = `
     <div class="fotos-mini">
-      ${p.foto_escala_url ? `<a href="${p.foto_escala_url}" target="_blank">Ver foto da escala</a>` : ''}
-      ${p.assinatura_url ? `<a href="${p.assinatura_url}" target="_blank">Ver assinatura</a>` : ''}
-      ${p.geolocalizacao ? `<a href="https://www.google.com/maps?q=${p.geolocalizacao}" target="_blank">Ver localização</a>` : ''}
+      ${t.fotoUrl ? `<a href="${t.fotoUrl}" target="_blank">Ver foto da escala</a>` : ''}
+      ${t.assinaturaUrl ? `<a href="${t.assinaturaUrl}" target="_blank">Ver assinatura</a>` : ''}
+      ${t.geolocalizacao ? `<a href="https://www.google.com/maps?q=${t.geolocalizacao}" target="_blank">Ver localização</a>` : ''}
     </div>
   `;
 
-  const acoesHtml = p.fiscalizado
-    ? `<div class="ja-fiscalizado">✓ Já fiscalizado (${p.tipo_validacao === 'total' ? 'validação total' : 'com ressalva'})</div>`
-    : `
+  let acoesHtml;
+  if (t.emAndamento) {
+    acoesHtml = `<div class="hint" style="margin-top:10px;">🔴 Turno em andamento — validação disponível após o encerramento.</div>`;
+  } else if (t.fiscalizado) {
+    acoesHtml = `<div class="ja-fiscalizado">✓ Já fiscalizado (${t.tipoValidacao === 'total' ? 'validação total' : 'com ressalva'})</div>`;
+  } else {
+    acoesHtml = `
       <div class="val-actions">
-        <button class="btn-total" onclick="validar('${p.id_plantao}', 'total')">Validar total</button>
-        <button class="btn-ressalva" onclick="validar('${p.id_plantao}', 'com_ressalva')">Validar com ressalva</button>
+        <button class="btn-total" onclick="validar('${t.ultimoIdPlantao}', 'total')">Validar plantão — total</button>
+        <button class="btn-ressalva" onclick="validar('${t.ultimoIdPlantao}', 'com_ressalva')">Validar com ressalva</button>
       </div>
     `;
+  }
 
   return `
     <div class="plantao-card">
       <div class="cabecalho">
-        <span class="badge badge-${p.turno}">${p.turno === 'diurno' ? 'Diurno' : 'Noturno'}</span>
-        <span class="hint" style="margin:0;">${new Date(p.registrado_em).toLocaleString('pt-BR')}</span>
+        <span class="badge badge-${t.turno}">${tituloTurno}</span>
+        ${t.emAndamento ? '<span class="hint" style="margin:0;">em andamento</span>' : ''}
       </div>
-      ${comparacaoHtml}
-      ${obsHtml}
+      ${especialidadesHtml}
+      ${observacoesHtml}
       ${fotosHtml}
       ${acoesHtml}
     </div>
+  `;
+}
+
+const CORES_STATUS = { verde: '#2f9e64', laranja: '#d9822b', vermelho: '#c94545' };
+
+/**
+ * Gera um gráfico de linha (tipo degrau) em SVG puro, sem libs externas,
+ * mostrando a quantidade de profissionais presentes ao longo do turno,
+ * colorido por segmento (verde = dentro do previsto, vermelho = abaixo).
+ */
+function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
+  const largura = 300, altura = 64, margemBaixo = 4, margemTopo = 6;
+  const inicioMs = new Date(intervaloInicio).getTime();
+  const fimMs = new Date(intervaloFim).getTime();
+  const totalMs = fimMs - inicioMs || 1;
+
+  const maxY = Math.max(esp.previsto, ...esp.segmentos.map(s => s.quantidade), 1);
+  const escalaX = t => ((new Date(t).getTime() - inicioMs) / totalMs) * largura;
+  const escalaY = q => altura - margemBaixo - (q / maxY) * (altura - margemBaixo - margemTopo);
+
+  let linhas = '';
+  esp.segmentos.forEach(function (seg, i) {
+    const x1 = escalaX(seg.inicio), x2 = escalaX(seg.fim), y = escalaY(seg.quantidade);
+    const cor = seg.compliant ? CORES_STATUS.verde : CORES_STATUS.vermelho;
+    linhas += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${cor}" stroke-width="2.5" stroke-linecap="round"></line>`;
+
+    if (i < esp.segmentos.length - 1) {
+      const proximo = esp.segmentos[i + 1];
+      const yProx = escalaY(proximo.quantidade);
+      linhas += `<line x1="${x2}" y1="${y}" x2="${x2}" y2="${yProx}" stroke="#c7cdd4" stroke-width="1.5"></line>`;
+    }
+  });
+
+  const yPrevisto = escalaY(esp.previsto);
+  const linhaPrevisto = `<line x1="0" y1="${yPrevisto}" x2="${largura}" y2="${yPrevisto}" stroke="#9aa5b1" stroke-width="1" stroke-dasharray="3,3"></line>`;
+
+  return `
+    <svg viewBox="0 0 ${largura} ${altura}" style="width:100%; height:${altura}px; display:block;">
+      ${linhaPrevisto}
+      ${linhas}
+    </svg>
   `;
 }
 
@@ -223,7 +289,7 @@ async function validar(idPlantao, tipo) {
   });
 
   if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
-  mostrarAlerta('Registro validado.', 'success');
+  mostrarAlerta('Plantão validado.', 'success');
   carregarFiscalizacao();
 }
 
