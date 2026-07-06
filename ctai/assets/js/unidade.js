@@ -244,7 +244,7 @@ const CORES_STATUS = { verde: '#2f9e64', laranja: '#d9822b', vermelho: '#c94545'
  * colorido por segmento (verde = dentro do previsto, vermelho = abaixo).
  */
 function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
-  const largura = 300, altura = 64, margemBaixo = 4, margemTopo = 6;
+  const largura = 300, altura = 72, margemBaixo = 4, margemTopo = 16;
   const inicioMs = new Date(intervaloInicio).getTime();
   const fimMs = new Date(intervaloFim).getTime();
   const totalMs = fimMs - inicioMs || 1;
@@ -258,6 +258,14 @@ function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
     const x1 = escalaX(seg.inicio), x2 = escalaX(seg.fim), y = escalaY(seg.quantidade);
     const cor = seg.compliant ? CORES_STATUS.verde : CORES_STATUS.vermelho;
     linhas += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${cor}" stroke-width="2.5" stroke-linecap="round"></line>`;
+
+    // rótulo numérico no meio do segmento, só se o segmento tiver largura mínima pra caber o texto
+    if (x2 - x1 > 18) {
+      const xMeio = (x1 + x2) / 2;
+      const acimaDaLinha = y > margemTopo + 8; // se a linha está muito no topo, desenha o número embaixo dela em vez de em cima
+      const yTexto = acimaDaLinha ? y - 6 : y + 12;
+      linhas += `<text x="${xMeio}" y="${yTexto}" font-size="10" font-weight="700" fill="${cor}" text-anchor="middle">${seg.quantidade}</text>`;
+    }
 
     if (i < esp.segmentos.length - 1) {
       const proximo = esp.segmentos[i + 1];
