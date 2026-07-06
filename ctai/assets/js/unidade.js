@@ -244,7 +244,7 @@ const CORES_STATUS = { verde: '#2f9e64', laranja: '#d9822b', vermelho: '#c94545'
  * colorido por segmento (verde = dentro do previsto, vermelho = abaixo).
  */
 function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
-  const largura = 300, altura = 88, margemBaixo = 20, margemTopo = 16;
+  const largura = 300, altura = 98, margemBaixo = 30, margemTopo = 16;
   const inicioMs = new Date(intervaloInicio).getTime();
   const fimMs = new Date(intervaloFim).getTime();
   const totalMs = fimMs - inicioMs || 1;
@@ -255,19 +255,24 @@ function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
   const formatarHora = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   let linhas = '';
-  let marcacoesTempo = '';
   const yBaseEixo = altura - margemBaixo;
-  const yTextoEixo = altura - 4;
+  const yLabelLinha0 = altura - 14;
+  const yLabelLinha1 = altura - 4;
+
+  // rótulos de horário candidatos: início/fim do turno + cada transição.
+  // são posicionados depois, com detecção de sobreposição (2 "linhas" alternadas).
+  const candidatosHorario = [
+    { x: 0, texto: formatarHora(intervaloInicio), anchor: 'start' }
+  ];
 
   esp.segmentos.forEach(function (seg, i) {
     const x1 = escalaX(seg.inicio), x2 = escalaX(seg.fim), y = escalaY(seg.quantidade);
     const cor = seg.compliant ? CORES_STATUS.verde : CORES_STATUS.vermelho;
     linhas += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${cor}" stroke-width="2.5" stroke-linecap="round"></line>`;
 
-    // rótulo numérico no meio do segmento, só se o segmento tiver largura mínima pra caber o texto
     if (x2 - x1 > 18) {
       const xMeio = (x1 + x2) / 2;
-      const acimaDaLinha = y > margemTopo + 8; // se a linha está muito no topo, desenha o número embaixo dela em vez de em cima
+      const acimaDaLinha = y > margemTopo + 8;
       const yTexto = acimaDaLinha ? y - 6 : y + 12;
       linhas += `<text x="${xMeio}" y="${yTexto}" font-size="10" font-weight="700" fill="${cor}" text-anchor="middle">${seg.quantidade}</text>`;
     }
@@ -276,15 +281,14 @@ function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
       const proximo = esp.segmentos[i + 1];
       const yProx = escalaY(proximo.quantidade);
       linhas += `<line x1="${x2}" y1="${y}" x2="${x2}" y2="${yProx}" stroke="#c7cdd4" stroke-width="1.5"></line>`;
-      // marca o horário exato da mudança (transição entre segmentos)
-      marcacoesTempo += `<line x1="${x2}" y1="${yBaseEixo}" x2="${x2}" y2="${yBaseEixo + 3}" stroke="#9aa5b1" stroke-width="1"></line>`;
-      marcacoesTempo += `<text x="${x2}" y="${yTextoEixo}" font-size="9" fill="#5b6773" text-anchor="middle">${formatarHora(seg.fim)}</text>`;
+      linhas += `<line x1="${x2}" y1="${yBaseEixo}" x2="${x2}" y2="${yBaseEixo + 3}" stroke="#9aa5b1" stroke-width="1"></line>`;
+      candidatosHorario.push({ x: x2, texto: formatarHora(seg.fim), anchor: 'middle' });
     }
   });
 
-  // horário de início e de fim do turno, sempre nas pontas
-  marcacoesTempo += `<text x="2" y="${yTextoEixo}" font-size="9" fill="#5b6773" text-anchor="start">${formatarHora(intervaloInicio)}</text>`;
-  marcacoesTempo += `<text x="${largura - 2}" y="${yTextoEixo}" font-size="9" fill="#5b6773" text-anchor="end">${formatarHora(intervaloFim)}</text>`;
+  candidatosHorario.push({ x: largura, texto: formatarHora(intervaloFim), anchor: 'end' });
+
+  const marcacoesTempo = posicionarRotulosSemSobreposicao_(candidatosHorario, yLabelLinha0, yLabelLinha1);
 
   const yPrevisto = escalaY(esp.previsto);
   const linhaPrevisto = `<line x1="0" y1="${yPrevisto}" x2="${largura}" y2="${yPrevisto}" stroke="#9aa5b1" stroke-width="1" stroke-dasharray="3,3"></line>`;
@@ -298,6 +302,48 @@ function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
       ${marcacoesTempo}
     </svg>
   `;
+}
+
+/**
+ * Recebe uma lista de rótulos candidatos (x, texto, anchor) ordenados por
+ * posição, e distribui em 2 "linhas" alternadas sempre que a largura estimada
+ * do texto invadiria o rótulo vizinho — evita "19:21" colar em cima de "18:59".
+ */
+function posicionarRotulosSemSobreposicao_(candidatos, yLinha0, yLinha1) {
+  const LARGURA_CHAR = 5.2; // estimativa pra fonte 9px
+  const GAP_MINIMO = 4;
+
+  function caixaDoRotulo(c) {
+    const largura = c.texto.length * LARGURA_CHAR;
+    if (c.anchor === 'start') return [c.x, c.x + largura];
+    if (c.anchor === 'end') return [c.x - largura, c.x];
+    return [c.x - largura / 2, c.x + largura / 2];
+  }
+
+  const ordenados = candidatos.slice().sort(function (a, b) { return a.x - b.x; });
+  let fimLinha0 = -Infinity;
+  let fimLinha1 = -Infinity;
+  let svg = '';
+
+  ordenados.forEach(function (c) {
+    const [inicioCaixa, fimCaixa] = caixaDoRotulo(c);
+    let linha;
+    if (inicioCaixa >= fimLinha0 + GAP_MINIMO) {
+      linha = 0;
+      fimLinha0 = fimCaixa;
+    } else if (inicioCaixa >= fimLinha1 + GAP_MINIMO) {
+      linha = 1;
+      fimLinha1 = fimCaixa;
+    } else {
+      // nenhuma das duas linhas tem espaço livre — usa a que sobrar menos apertada
+      linha = fimLinha0 <= fimLinha1 ? 0 : 1;
+      if (linha === 0) fimLinha0 = fimCaixa; else fimLinha1 = fimCaixa;
+    }
+    const y = linha === 0 ? yLinha0 : yLinha1;
+    svg += `<text x="${c.x}" y="${y}" font-size="9" fill="#5b6773" text-anchor="${c.anchor}">${c.texto}</text>`;
+  });
+
+  return svg;
 }
 
 async function validar(idPlantao, tipo) {
