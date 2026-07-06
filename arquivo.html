@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escalex — Arquivo</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .arquivo-card {
+    background:#fff; border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; margin-bottom:12px; cursor:pointer;
+  }
+  .arquivo-card .cabecalho { display:flex; justify-content:space-between; align-items:center; }
+  .arquivo-card .data { font-weight:700; color: var(--navy-900); font-size:0.92rem; }
+  .arquivo-detalhe { display:none; margin-top:12px; border-top:1px dashed var(--border); padding-top:12px; }
+  .arquivo-detalhe.aberto { display:block; }
+  .qtd-linha { display:flex; justify-content:space-between; font-size:0.85rem; padding:3px 0; }
+  .fiscal-badge { font-size:0.72rem; font-weight:700; padding:3px 9px; border-radius:20px; }
+  .fiscal-badge.total { background:#eaf6ef; color: var(--success); }
+  .fiscal-badge.ressalva { background:#fff4dd; color: var(--warning); }
+  .fiscal-badge.pendente { background:#eef1f4; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1.6"/>
+    <path d="M3 9H21" stroke="#fff" stroke-width="1.6"/>
+    <path d="M8 2.5V5.5M16 2.5V5.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>
+  <div>
+    <h1>ESCALEX</h1>
+    <div class="subtitle">Arquivo de plantões — somente consulta</div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="alertBox"></div>
+  <div id="listaArquivo">Carregando plantões encerrados…</div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="plantao.html"><span class="icone">📋</span>Plantão atual</a>
+  <a href="arquivo.html" class="active"><span class="icone">🗂️</span>Arquivo</a>
+</nav>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/arquivo.js"></script>
+</body>
+</html>
