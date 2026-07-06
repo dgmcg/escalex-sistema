@@ -96,6 +96,22 @@
   <!-- CONFIGURAÇÕES -->
   <div class="tab-content" id="tab-config">
     <div class="card">
+      <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Horários dos turnos</h3>
+      <p class="hint" style="margin-top:0;">Define quando o app libera o registro de cada turno. O turno diurno vai do horário abaixo até o início do noturno (mesmo dia); o noturno vai até o início do diurno do dia seguinte.</p>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1;">
+          <label for="horaInicioDiurno">Início do diurno</label>
+          <input type="time" id="horaInicioDiurno">
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="horaInicioNoturno">Início do noturno</label>
+          <input type="time" id="horaInicioNoturno">
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="btnSalvarHorarios">Salvar horários</button>
+    </div>
+
+    <div class="card">
       <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Especialidades e quantitativo previsto</h3>
       <div id="listaEspecialidadesConfig">Carregando…</div>
       <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
