@@ -244,16 +244,21 @@ const CORES_STATUS = { verde: '#2f9e64', laranja: '#d9822b', vermelho: '#c94545'
  * colorido por segmento (verde = dentro do previsto, vermelho = abaixo).
  */
 function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
-  const largura = 300, altura = 72, margemBaixo = 4, margemTopo = 16;
+  const largura = 300, altura = 88, margemBaixo = 20, margemTopo = 16;
   const inicioMs = new Date(intervaloInicio).getTime();
   const fimMs = new Date(intervaloFim).getTime();
   const totalMs = fimMs - inicioMs || 1;
 
   const maxY = Math.max(esp.previsto, ...esp.segmentos.map(s => s.quantidade), 1);
   const escalaX = t => ((new Date(t).getTime() - inicioMs) / totalMs) * largura;
-  const escalaY = q => altura - margemBaixo - (q / maxY) * (altura - margemBaixo - margemTopo);
+  const escalaY = q => (altura - margemBaixo) - (q / maxY) * (altura - margemBaixo - margemTopo);
+  const formatarHora = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   let linhas = '';
+  let marcacoesTempo = '';
+  const yBaseEixo = altura - margemBaixo;
+  const yTextoEixo = altura - 4;
+
   esp.segmentos.forEach(function (seg, i) {
     const x1 = escalaX(seg.inicio), x2 = escalaX(seg.fim), y = escalaY(seg.quantidade);
     const cor = seg.compliant ? CORES_STATUS.verde : CORES_STATUS.vermelho;
@@ -271,16 +276,26 @@ function gerarGraficoSVG(esp, intervaloInicio, intervaloFim) {
       const proximo = esp.segmentos[i + 1];
       const yProx = escalaY(proximo.quantidade);
       linhas += `<line x1="${x2}" y1="${y}" x2="${x2}" y2="${yProx}" stroke="#c7cdd4" stroke-width="1.5"></line>`;
+      // marca o horário exato da mudança (transição entre segmentos)
+      marcacoesTempo += `<line x1="${x2}" y1="${yBaseEixo}" x2="${x2}" y2="${yBaseEixo + 3}" stroke="#9aa5b1" stroke-width="1"></line>`;
+      marcacoesTempo += `<text x="${x2}" y="${yTextoEixo}" font-size="9" fill="#5b6773" text-anchor="middle">${formatarHora(seg.fim)}</text>`;
     }
   });
 
+  // horário de início e de fim do turno, sempre nas pontas
+  marcacoesTempo += `<text x="2" y="${yTextoEixo}" font-size="9" fill="#5b6773" text-anchor="start">${formatarHora(intervaloInicio)}</text>`;
+  marcacoesTempo += `<text x="${largura - 2}" y="${yTextoEixo}" font-size="9" fill="#5b6773" text-anchor="end">${formatarHora(intervaloFim)}</text>`;
+
   const yPrevisto = escalaY(esp.previsto);
   const linhaPrevisto = `<line x1="0" y1="${yPrevisto}" x2="${largura}" y2="${yPrevisto}" stroke="#9aa5b1" stroke-width="1" stroke-dasharray="3,3"></line>`;
+  const linhaEixoBase = `<line x1="0" y1="${yBaseEixo}" x2="${largura}" y2="${yBaseEixo}" stroke="#e1e6ec" stroke-width="1"></line>`;
 
   return `
     <svg viewBox="0 0 ${largura} ${altura}" style="width:100%; height:${altura}px; display:block;">
       ${linhaPrevisto}
+      ${linhaEixoBase}
       ${linhas}
+      ${marcacoesTempo}
     </svg>
   `;
 }
