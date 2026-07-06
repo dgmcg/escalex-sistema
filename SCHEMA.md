@@ -9,6 +9,8 @@ Planilha única "Escalex_DB", uma aba por entidade. Cada aba tem cabeçalho fixo
 | nome | string | nome da unidade |
 | tipo | string | Hospital / UPA / UPAE |
 | ativo | boolean | true/false |
+| hora_inicio_diurno | string "HH:mm" | ex: "07:00" — padrão se vazio |
+| hora_inicio_noturno | string "HH:mm" | ex: "19:00" — padrão se vazio |
 | criado_em | datetime | |
 
 ## Aba: Especialidades_Unidade
