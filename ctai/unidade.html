@@ -72,6 +72,25 @@
       </div>
     </div>
     <div id="listaPlantoes">Carregando plantões…</div>
+
+    <div class="card">
+      <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Emitir relatório do período</h3>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1;">
+          <label for="relatorioInicio">De</label>
+          <input type="date" id="relatorioInicio">
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="relatorioFim">Até</label>
+          <input type="date" id="relatorioFim">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-secondary" id="btnRelatorioPDF">📄 Gerar PDF</button>
+        <button class="btn btn-secondary" id="btnRelatorioPlanilha">📊 Gerar Planilha</button>
+      </div>
+      <div id="relatorioResultado" style="margin-top:12px;"></div>
+    </div>
   </div>
 
   <!-- CONFIGURAÇÕES -->
