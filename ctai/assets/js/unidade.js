@@ -168,6 +168,17 @@ const STATUS_LABEL = { verde: 'Verificado', laranja: 'Atenção', vermelho: 'Inc
 function renderizarTurnoCard(t) {
   const tituloTurno = t.turno === 'diurno' ? 'Diurno (07h–19h)' : 'Noturno (19h–07h)';
 
+  if (t.aindaNaoIniciou) {
+    return `
+      <div class="plantao-card">
+        <div class="cabecalho">
+          <span class="badge badge-${t.turno}">${tituloTurno}</span>
+          <span class="hint" style="margin:0;">⏳ Ainda não iniciado</span>
+        </div>
+      </div>
+    `;
+  }
+
   if (!t.temRegistro && !t.emAndamento) {
     return `
       <div class="plantao-card">
