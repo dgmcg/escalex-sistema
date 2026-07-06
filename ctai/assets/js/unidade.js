@@ -30,9 +30,29 @@ async function carregarDetalhe() {
   }
   detalheAtual = resp.data;
   document.getElementById('nomeUnidadeTopo').textContent = detalheAtual.unidade.nome;
+  document.getElementById('horaInicioDiurno').value = detalheAtual.unidade.hora_inicio_diurno || '07:00';
+  document.getElementById('horaInicioNoturno').value = detalheAtual.unidade.hora_inicio_noturno || '19:00';
   renderizarEspecialidades();
   renderizarUsuarios();
 }
+
+document.getElementById('btnSalvarHorarios').addEventListener('click', async function () {
+  const horaInicioDiurno = document.getElementById('horaInicioDiurno').value;
+  const horaInicioNoturno = document.getElementById('horaInicioNoturno').value;
+
+  if (!horaInicioDiurno || !horaInicioNoturno) {
+    mostrarAlerta('Informe os dois horários.', 'error');
+    return;
+  }
+
+  const resp = await EscalexAPI.post('salvarUnidade', {
+    dados: { id_unidade: idUnidade, hora_inicio_diurno: horaInicioDiurno, hora_inicio_noturno: horaInicioNoturno }
+  });
+
+  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+  mostrarAlerta('Horários atualizados.', 'success');
+  carregarDetalhe();
+});
 
 function renderizarEspecialidades() {
   const container = document.getElementById('listaEspecialidadesConfig');
