@@ -171,7 +171,7 @@ function renderizarProjetos() {
 
   container.innerHTML = projetos.map(function (p) {
     const status = classificarProjeto(p);
-    const especialidadesDoProjeto = detalheAtual.especialidades.filter(function (e) { return e.id_projeto === p.id_projeto; });
+    const especialidadesDoProjeto = detalheAtual.especialidades.filter(function (e) { return e.id_projeto === p.id_projeto && e.ativo === true; });
     const inicioBr = formatarDataSheet(p.data_inicio).split('-').reverse().join('/');
     const fimBr = formatarDataSheet(p.data_fim).split('-').reverse().join('/');
 
