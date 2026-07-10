@@ -7,14 +7,14 @@ Scaffold inicial: frontend estático (GitHub Pages) + backend Apps Script (API) 
 - `apps-script/` — backend: `Code.gs` (roteador), `Auth.gs` (login/troca de senha/reset/criação de usuário e gestor), `Plantao.gs` (registro/atualização), `Gestao.gs` (CRUD de unidade/especialidade + fiscalização), `Utils.gs` (hash, Drive, leitura/escrita genérica de abas), `Seed.gs` (dados de teste).
 - `index.html` + `login.js` — tela de login do app.
 - `trocar-senha.html` — troca obrigatória no primeiro acesso.
-- `plantao.html` + `plantao.js` + `signature.js` — formulário completo: especialidades dinâmicas, foto (câmera **e** galeria separadas), assinatura em canvas, geolocalização com mapa visual (Leaflet), campos automáticos não editáveis. Agora com barra de navegação inferior (Plantão atual / Arquivo).
+- `plantao.html` + `plantao.js` + `signature.js` — formulário completo: especialidades dinâmicas, foto (câmera **e** galeria separadas), assinatura em canvas, geolocalização com mapa visual (Leaflet), campos automáticos não editáveis. Agora com barra de navegação inferior (Plantão atual / Arquivo) e **especialidades de projetos vigentes exibidas separadamente** (cards com borda dourada) quando há um projeto de sazonalidade ativo pra unidade naquela data.
 - **`arquivo.html`** + `assets/js/arquivo.js` — aba de consulta (somente leitura) dos plantões já encerrados: quantidade final por especialidade, observações com horário, status de fiscalização (total/ressalva/pendente), e links pra foto/assinatura/mapa. Toque no card expande os detalhes.
 - `apps-script/Arquivo.gs` — backend da aba Arquivo: agrupa todo o histórico de um plantão (registro + atualizações) e retorna o estado final, excluindo automaticamente o turno vigente (que continua só no formulário de registro).
 - `assets/css/style.css` — identidade visual (navy + dourado do brasão, tipografia Fraunces/Inter).
 - **`ctai/`** — módulo Gestão CTAI (web, separado do app):
   - `index.html` + `login-ctai.js` — login do gestor.
   - `unidades.html` + `unidades.js` — tela inicial: lista de unidades + criação rápida.
-  - `unidade.html` + `unidade.js` — tela de unidade com 2 abas: **Fiscalização** (consolidada por turno inteiro, com gráfico de linha por especialidade mostrando a presença ao longo do turno — número e horário de cada mudança —, percentual de cobertura, status verde/laranja/vermelho, validação total ou com ressalva, e **emissão de relatórios em PDF e Planilha por período**, salvos em `Escalex/Relatorios/` no Drive) e **Configurações** (especialidades + quantitativo previsto, cadastro de usuários do app, reset de senha).
+  - `unidade.html` + `unidade.js` — tela de unidade com 2 abas: **Fiscalização** (consolidada por turno inteiro, com gráfico de linha por especialidade mostrando a presença ao longo do turno — número e horário de cada mudança —, percentual de cobertura, status verde/laranja/vermelho, validação total ou com ressalva, e **emissão de relatórios em PDF e Planilha por período**, salvos em `Escalex/Relatorios/` no Drive) e **Configurações** (especialidades + quantitativo previsto, cadastro de usuários do app, reset de senha, horários dos turnos, e **Projetos de sazonalidade** com especialidades próprias vigentes só no período do projeto).
 
 ## Como testar o módulo CTAI
 1. No editor do Apps Script, rode de novo `seedDadosTeste` (agora ele também cria um gestor de teste — confira o username no log, senha `123`).
@@ -34,7 +34,6 @@ Scaffold inicial: frontend estático (GitHub Pages) + backend Apps Script (API) 
 - Deleção/inativação de unidades e usuários pela interface (hoje só criação/edição).
 - Verificação preditiva de similaridade de assinatura (heurística — não é biometria forense).
 - Alerta automático de plantão não preenchido.
-- Módulos Projetos (sazonalidade) na interface — já existe no schema/backend, falta tela.
 - Módulos Dashboards, Gestão Documental e Gestão Geral do Sistema.
 
 ## Decisões já tomadas (conforme conversa)
