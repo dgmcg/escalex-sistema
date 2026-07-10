@@ -34,6 +34,7 @@ async function carregarDetalhe() {
   document.getElementById('horaInicioNoturno').value = detalheAtual.unidade.hora_inicio_noturno || '19:00';
   renderizarEspecialidades();
   renderizarUsuarios();
+  renderizarProjetos();
 }
 
 document.getElementById('btnSalvarHorarios').addEventListener('click', async function () {
@@ -56,7 +57,7 @@ document.getElementById('btnSalvarHorarios').addEventListener('click', async fun
 
 function renderizarEspecialidades() {
   const container = document.getElementById('listaEspecialidadesConfig');
-  const ativas = detalheAtual.especialidades.filter(e => e.ativo === true);
+  const ativas = detalheAtual.especialidades.filter(e => e.ativo === true && !e.id_projeto);
 
   if (ativas.length === 0) {
     container.innerHTML = '<div class="hint">Nenhuma especialidade configurada ainda.</div>';
@@ -122,7 +123,107 @@ async function resetarSenha(idUsuario) {
   mostrarAlerta(resp.ok ? 'Senha redefinida para 123.' : resp.erro, resp.ok ? 'success' : 'error');
 }
 
-document.getElementById('btnAddEspecialidade').addEventListener('click', async function () {
+function classificarProjeto(p) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const inicio = formatarDataSheet(p.data_inicio);
+  const fim = formatarDataSheet(p.data_fim);
+  if (hoje < inicio) return 'futuro';
+  if (hoje > fim) return 'encerrado';
+  return 'vigente';
+}
+
+function formatarDataSheet(valor) {
+  // o Sheets pode devolver Date serializado (ISO) ou string yyyy-MM-dd
+  if (typeof valor === 'string' && valor.length === 10) return valor;
+  return new Date(valor).toISOString().slice(0, 10);
+}
+
+function renderizarProjetos() {
+  const container = document.getElementById('listaProjetos');
+  const projetos = detalheAtual.projetos || [];
+
+  if (projetos.length === 0) {
+    container.innerHTML = '<div class="hint">Nenhum projeto cadastrado ainda.</div>';
+    return;
+  }
+
+  const LABEL_STATUS = { vigente: 'Vigente agora', futuro: 'Ainda não iniciou', encerrado: 'Encerrado' };
+
+  container.innerHTML = projetos.map(function (p) {
+    const status = classificarProjeto(p);
+    const especialidadesDoProjeto = detalheAtual.especialidades.filter(function (e) { return e.id_projeto === p.id_projeto; });
+    const inicioBr = formatarDataSheet(p.data_inicio).split('-').reverse().join('/');
+    const fimBr = formatarDataSheet(p.data_fim).split('-').reverse().join('/');
+
+    const especialidadesHtml = especialidadesDoProjeto.length
+      ? especialidadesDoProjeto.map(function (e) {
+          return `<div class="qty-row"><div class="nome">${e.nome_especialidade}</div><div class="hint" style="margin:0;">D: ${e.qtd_prevista_diurno} · N: ${e.qtd_prevista_noturno}</div></div>`;
+        }).join('')
+      : '<div class="hint">Nenhuma especialidade adicionada a este projeto ainda.</div>';
+
+    return `
+      <div class="projeto-item">
+        <div class="cabecalho-projeto" onclick="this.nextElementSibling.classList.toggle('aberto')">
+          <div>
+            <div class="nome-projeto">${p.nome_projeto}</div>
+            <div class="periodo-projeto">${inicioBr} a ${fimBr}</div>
+          </div>
+          <span class="projeto-badge ${status}">${LABEL_STATUS[status]}</span>
+        </div>
+        <div class="projeto-detalhe">
+          ${especialidadesHtml}
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <input type="text" placeholder="Nova especialidade" class="proj-esp-nome" data-projeto="${p.id_projeto}" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--border);">
+            <input type="number" min="0" value="0" placeholder="D" class="proj-esp-diurno" data-projeto="${p.id_projeto}" style="width:50px; padding:8px; border-radius:8px; border:1px solid var(--border);">
+            <input type="number" min="0" value="0" placeholder="N" class="proj-esp-noturno" data-projeto="${p.id_projeto}" style="width:50px; padding:8px; border-radius:8px; border:1px solid var(--border);">
+            <button onclick="adicionarEspecialidadeProjeto('${p.id_projeto}')" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:#fff;">+</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+document.getElementById('btnAddProjeto').addEventListener('click', async function () {
+  const nome = document.getElementById('novoProjNome').value.trim();
+  const inicio = document.getElementById('novoProjInicio').value;
+  const fim = document.getElementById('novoProjFim').value;
+
+  if (!nome || !inicio || !fim) { mostrarAlerta('Preencha nome, início e fim do projeto.', 'error'); return; }
+  if (inicio > fim) { mostrarAlerta('A data de início precisa ser antes da data de fim.', 'error'); return; }
+
+  const resp = await EscalexAPI.post('salvarProjeto', {
+    dados: { id_unidade: idUnidade, nome_projeto: nome, data_inicio: inicio, data_fim: fim }
+  });
+
+  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+  document.getElementById('novoProjNome').value = '';
+  mostrarAlerta('Projeto criado.', 'success');
+  carregarDetalhe();
+});
+
+async function adicionarEspecialidadeProjeto(idProjeto) {
+  const nomeInput = document.querySelector(`.proj-esp-nome[data-projeto="${idProjeto}"]`);
+  const diurnoInput = document.querySelector(`.proj-esp-diurno[data-projeto="${idProjeto}"]`);
+  const noturnoInput = document.querySelector(`.proj-esp-noturno[data-projeto="${idProjeto}"]`);
+
+  const nome = nomeInput.value.trim();
+  if (!nome) { mostrarAlerta('Informe o nome da especialidade do projeto.', 'error'); return; }
+
+  const resp = await EscalexAPI.post('salvarEspecialidade', {
+    dados: {
+      id_unidade: idUnidade,
+      id_projeto: idProjeto,
+      nome_especialidade: nome,
+      qtd_prevista_diurno: Number(diurnoInput.value),
+      qtd_prevista_noturno: Number(noturnoInput.value)
+    }
+  });
+
+  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+  mostrarAlerta('Especialidade adicionada ao projeto.', 'success');
+  carregarDetalhe();
+}
   const nome = document.getElementById('novaEspNome').value.trim();
   if (!nome) { mostrarAlerta('Informe o nome da especialidade.', 'error'); return; }
 
