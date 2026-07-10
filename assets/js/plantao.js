@@ -93,22 +93,21 @@ function montarTela() {
   const anterior = contexto.plantaoVigente;
   const quantidadesAnteriores = anterior ? JSON.parse(anterior.quantidades_json || '{}') : {};
 
-  const lista = document.getElementById('listaEspecialidades');
-  lista.innerHTML = '';
-  contexto.especialidades.forEach(function (esp) {
-    const valorAnterior = quantidadesAnteriores[esp.id_especialidade];
-    const row = document.createElement('div');
-    row.className = 'qty-row';
-    row.innerHTML = `
-      <label for="qtd_${esp.id_especialidade}">
-        ${esp.nome_especialidade}
-        ${valorAnterior !== undefined ? `<div class="hint previous">Último registro: ${valorAnterior}</div>` : ''}
-      </label>
-      <input type="number" min="0" step="1" inputmode="numeric"
-             id="qtd_${esp.id_especialidade}" data-id="${esp.id_especialidade}"
-             value="${valorAnterior !== undefined ? '' : 0}" required>
+  renderizarListaEspecialidades(document.getElementById('listaEspecialidades'), contexto.especialidadesPadrao, quantidadesAnteriores);
+
+  const containerProjetos = document.getElementById('projetosAtivosContainer');
+  containerProjetos.innerHTML = '';
+  (contexto.projetosAtivos || []).forEach(function (projeto) {
+    const card = document.createElement('div');
+    card.className = 'card card-projeto';
+    const dataFimBr = projeto.data_fim.split('-').reverse().join('/');
+    card.innerHTML = `
+      <div class="projeto-titulo">📌 ${projeto.nome_projeto}</div>
+      <div class="projeto-periodo">Projeto vigente até ${dataFimBr}</div>
+      <div class="lista-especialidades-projeto"></div>
     `;
-    lista.appendChild(row);
+    containerProjetos.appendChild(card);
+    renderizarListaEspecialidades(card.querySelector('.lista-especialidades-projeto'), projeto.especialidades, quantidadesAnteriores);
   });
 
   if (anterior) {
@@ -121,6 +120,25 @@ function montarTela() {
       document.getElementById('fotoAnteriorImg').src = anterior.foto_escala_url;
     }
   }
+}
+
+function renderizarListaEspecialidades(container, especialidades, quantidadesAnteriores) {
+  container.innerHTML = '';
+  especialidades.forEach(function (esp) {
+    const valorAnterior = quantidadesAnteriores[esp.id_especialidade];
+    const row = document.createElement('div');
+    row.className = 'qty-row';
+    row.innerHTML = `
+      <label for="qtd_${esp.id_especialidade}">
+        ${esp.nome_especialidade}
+        ${valorAnterior !== undefined ? `<div class="hint previous">Último registro: ${valorAnterior}</div>` : ''}
+      </label>
+      <input type="number" min="0" step="1" inputmode="numeric" class="qtd-input"
+             id="qtd_${esp.id_especialidade}" data-id="${esp.id_especialidade}"
+             value="${valorAnterior !== undefined ? '' : 0}" required>
+    `;
+    container.appendChild(row);
+  });
 }
 
 document.getElementById('btnValidarFoto').addEventListener('click', function () {
@@ -178,7 +196,7 @@ document.getElementById('formPlantao').addEventListener('submit', async function
   }
 
   const quantidades = {};
-  document.querySelectorAll('#listaEspecialidades input[type=number]').forEach(function (input) {
+  document.querySelectorAll('.qtd-input').forEach(function (input) {
     quantidades[input.dataset.id] = Number(input.value);
   });
 
