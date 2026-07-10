@@ -13,6 +13,9 @@
   .qty-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
   .qty-row label { flex: 1; font-size: 0.9rem; font-weight: 500; margin: 0; }
   .qty-row input { width: 88px; text-align: center; }
+  .card-projeto { border-left: 4px solid var(--sun-gold); }
+  .card-projeto .projeto-titulo { display:flex; align-items:center; gap:6px; font-size:0.95rem; color: var(--navy-700); margin:0 0 4px; font-weight:700; }
+  .card-projeto .projeto-periodo { font-size:0.75rem; color: var(--ink-soft); margin-bottom:10px; }
   #loadingScreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 50; font-size: 0.9rem; color: var(--ink-soft); }
 </style>
 </head>
@@ -55,6 +58,8 @@
       <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Profissionais presentes por especialidade</h3>
       <div id="listaEspecialidades"><!-- preenchido via JS --></div>
     </div>
+
+    <div id="projetosAtivosContainer"><!-- cards de projetos vigentes, preenchidos via JS --></div>
 
     <div class="card">
       <div class="field">
