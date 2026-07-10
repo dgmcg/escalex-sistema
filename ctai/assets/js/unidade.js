@@ -224,6 +224,7 @@ async function adicionarEspecialidadeProjeto(idProjeto) {
   mostrarAlerta('Especialidade adicionada ao projeto.', 'success');
   carregarDetalhe();
 }
+document.getElementById('btnAddEspecialidade').addEventListener('click', async function () {
   const nome = document.getElementById('novaEspNome').value.trim();
   if (!nome) { mostrarAlerta('Informe o nome da especialidade.', 'error'); return; }
 
