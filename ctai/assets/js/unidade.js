@@ -158,9 +158,11 @@ function formatarDataSheet(valor) {
   return new Date(valor).toISOString().slice(0, 10);
 }
 
+let projetoEmEdicao = null;
+
 function renderizarProjetos() {
   const container = document.getElementById('listaProjetos');
-  const projetos = detalheAtual.projetos || [];
+  const projetos = (detalheAtual.projetos || []).filter(function (p) { return p.ativo !== false; });
 
   if (projetos.length === 0) {
     container.innerHTML = '<div class="hint">Nenhum projeto cadastrado ainda.</div>';
@@ -170,6 +172,31 @@ function renderizarProjetos() {
   const LABEL_STATUS = { vigente: 'Vigente agora', futuro: 'Ainda não iniciou', encerrado: 'Encerrado' };
 
   container.innerHTML = projetos.map(function (p) {
+    if (projetoEmEdicao === p.id_projeto) {
+      return `
+        <div class="projeto-item">
+          <div class="field" style="margin-bottom:8px;">
+            <label>Nome do projeto</label>
+            <input type="text" id="editProjNome_${p.id_projeto}" value="${p.nome_projeto}">
+          </div>
+          <div style="display:flex; gap:10px;">
+            <div class="field" style="flex:1;">
+              <label>Início</label>
+              <input type="date" id="editProjInicio_${p.id_projeto}" value="${formatarDataSheet(p.data_inicio)}">
+            </div>
+            <div class="field" style="flex:1;">
+              <label>Fim</label>
+              <input type="date" id="editProjFim_${p.id_projeto}" value="${formatarDataSheet(p.data_fim)}">
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" style="width:auto; flex:1;" onclick="salvarEdicaoProjeto('${p.id_projeto}', this)">Salvar alterações</button>
+            <button class="btn btn-secondary" style="width:auto;" onclick="cancelarEdicaoProjeto()">Cancelar</button>
+          </div>
+        </div>
+      `;
+    }
+
     const status = classificarProjeto(p);
     const especialidadesDoProjeto = detalheAtual.especialidades.filter(function (e) { return e.id_projeto === p.id_projeto && e.ativo === true; });
     const inicioBr = formatarDataSheet(p.data_inicio).split('-').reverse().join('/');
@@ -189,12 +216,14 @@ function renderizarProjetos() {
 
     return `
       <div class="projeto-item">
-        <div class="cabecalho-projeto" onclick="this.nextElementSibling.classList.toggle('aberto')">
-          <div>
+        <div class="cabecalho-projeto">
+          <div onclick="this.closest('.projeto-item').querySelector('.projeto-detalhe').classList.toggle('aberto')" style="cursor:pointer; flex:1;">
             <div class="nome-projeto">${p.nome_projeto}</div>
             <div class="periodo-projeto">${inicioBr} a ${fimBr}</div>
           </div>
-          <span class="projeto-badge ${status}">${LABEL_STATUS[status]}</span>
+          <span class="projeto-badge ${status}" style="margin-right:8px;">${LABEL_STATUS[status]}</span>
+          <button onclick="event.stopPropagation(); editarProjeto('${p.id_projeto}')" title="Editar projeto" style="background:none; border:none; font-size:0.95rem; cursor:pointer; padding:2px 6px;">✏️</button>
+          <button onclick="event.stopPropagation(); excluirProjeto('${p.id_projeto}')" title="Excluir projeto" style="background:none; border:none; color:var(--danger); font-size:0.95rem; cursor:pointer; padding:2px 6px;">🗑️</button>
         </div>
         <div class="projeto-detalhe">
           ${especialidadesHtml}
@@ -216,6 +245,52 @@ function renderizarProjetos() {
       </div>
     `;
   }).join('');
+}
+
+function editarProjeto(idProjeto) {
+  projetoEmEdicao = idProjeto;
+  renderizarProjetos();
+}
+
+function cancelarEdicaoProjeto() {
+  projetoEmEdicao = null;
+  renderizarProjetos();
+}
+
+async function salvarEdicaoProjeto(idProjeto, botao) {
+  const nome = document.getElementById(`editProjNome_${idProjeto}`).value.trim();
+  const inicio = document.getElementById(`editProjInicio_${idProjeto}`).value;
+  const fim = document.getElementById(`editProjFim_${idProjeto}`).value;
+
+  if (!nome || !inicio || !fim) { mostrarAlerta('Preencha nome, início e fim do projeto.', 'error'); return; }
+  if (inicio > fim) { mostrarAlerta('A data de início precisa ser antes da data de fim.', 'error'); return; }
+
+  botao.disabled = true;
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Salvando…';
+
+  try {
+    const resp = await EscalexAPI.post('salvarProjeto', {
+      dados: { id_projeto: idProjeto, nome_projeto: nome, data_inicio: inicio, data_fim: fim }
+    });
+
+    if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+    mostrarAlerta('Projeto atualizado.', 'success');
+    projetoEmEdicao = null;
+    carregarDetalhe();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
+}
+
+async function excluirProjeto(idProjeto) {
+  if (!confirm('Remover este projeto? As especialidades vinculadas a ele deixam de aparecer no app e na fiscalização, mas o histórico de plantões já registrados é mantido.')) return;
+
+  const resp = await EscalexAPI.post('excluirProjeto', { dados: { id_projeto: idProjeto } });
+  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+  mostrarAlerta('Projeto removido.', 'success');
+  carregarDetalhe();
 }
 
 document.getElementById('btnAddProjeto').addEventListener('click', async function () {
