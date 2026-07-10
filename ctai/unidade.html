@@ -45,6 +45,17 @@
   .ja-fiscalizado { font-size:0.78rem; color: var(--success); font-weight:600; }
   .fotos-mini { display:flex; gap:8px; margin-top:8px; }
   .fotos-mini a { font-size:0.78rem; color: var(--blue-accent); }
+
+  .projeto-item { border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; }
+  .projeto-item .cabecalho-projeto { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+  .projeto-item .nome-projeto { font-weight:600; font-size:0.9rem; }
+  .projeto-item .periodo-projeto { font-size:0.75rem; color: var(--ink-soft); }
+  .projeto-badge { font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:20px; }
+  .projeto-badge.vigente { background:#eaf6ef; color: var(--success); }
+  .projeto-badge.futuro { background:#eef1f4; color: var(--ink-soft); }
+  .projeto-badge.encerrado { background:#f7e9e9; color: var(--danger); }
+  .projeto-detalhe { display:none; margin-top:10px; border-top:1px dashed var(--border); padding-top:10px; }
+  .projeto-detalhe.aberto { display:block; }
 </style>
 </head>
 <body>
@@ -109,6 +120,28 @@
         </div>
       </div>
       <button class="btn btn-secondary" id="btnSalvarHorarios">Salvar horários</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Projetos (sazonalidade)</h3>
+      <p class="hint" style="margin-top:0;">Um projeto tem suas próprias especialidades, que só aparecem no app enquanto o período do projeto estiver vigente — separado do formulário padrão.</p>
+      <div id="listaProjetos">Carregando…</div>
+      <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+      <div class="field">
+        <label for="novoProjNome">Nome do projeto</label>
+        <input type="text" id="novoProjNome" placeholder="Ex.: Campanha de combate à dengue">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1;">
+          <label for="novoProjInicio">Início</label>
+          <input type="date" id="novoProjInicio">
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="novoProjFim">Fim</label>
+          <input type="date" id="novoProjFim">
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="btnAddProjeto">Criar projeto</button>
     </div>
 
     <div class="card">
