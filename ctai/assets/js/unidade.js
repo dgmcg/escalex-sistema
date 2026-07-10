@@ -38,6 +38,7 @@ async function carregarDetalhe() {
 }
 
 document.getElementById('btnSalvarHorarios').addEventListener('click', async function () {
+  const botao = this;
   const horaInicioDiurno = document.getElementById('horaInicioDiurno').value;
   const horaInicioNoturno = document.getElementById('horaInicioNoturno').value;
 
@@ -46,13 +47,22 @@ document.getElementById('btnSalvarHorarios').addEventListener('click', async fun
     return;
   }
 
-  const resp = await EscalexAPI.post('salvarUnidade', {
-    dados: { id_unidade: idUnidade, hora_inicio_diurno: horaInicioDiurno, hora_inicio_noturno: horaInicioNoturno }
-  });
+  botao.disabled = true;
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Salvando…';
 
-  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
-  mostrarAlerta('Horários atualizados.', 'success');
-  carregarDetalhe();
+  try {
+    const resp = await EscalexAPI.post('salvarUnidade', {
+      dados: { id_unidade: idUnidade, hora_inicio_diurno: horaInicioDiurno, hora_inicio_noturno: horaInicioNoturno }
+    });
+
+    if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+    mostrarAlerta('Horários atualizados.', 'success');
+    carregarDetalhe();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
 });
 
 function renderizarEspecialidades() {
@@ -76,6 +86,7 @@ function renderizarEspecialidades() {
           <div class="hint" style="margin:0;">Noturno</div>
           <input type="number" min="0" value="${e.qtd_prevista_noturno}" data-id="${e.id_especialidade}" data-campo="qtd_prevista_noturno" class="esp-input">
         </div>
+        <button onclick="excluirEspecialidade('${e.id_especialidade}')" title="Excluir especialidade" style="background:none; border:none; color:var(--danger); font-size:1rem; cursor:pointer; padding:4px 6px;">🗑️</button>
       </div>
     `;
   }).join('');
@@ -123,6 +134,15 @@ async function resetarSenha(idUsuario) {
   mostrarAlerta(resp.ok ? 'Senha redefinida para 123.' : resp.erro, resp.ok ? 'success' : 'error');
 }
 
+async function excluirEspecialidade(idEspecialidade) {
+  if (!confirm('Remover esta especialidade? Ela deixa de aparecer no app e nas configurações, mas o histórico de plantões já registrados é mantido.')) return;
+
+  const resp = await EscalexAPI.post('excluirEspecialidade', { dados: { id_especialidade: idEspecialidade } });
+  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+  mostrarAlerta('Especialidade removida.', 'success');
+  carregarDetalhe();
+}
+
 function classificarProjeto(p) {
   const hoje = new Date().toISOString().slice(0, 10);
   const inicio = formatarDataSheet(p.data_inicio);
@@ -157,7 +177,13 @@ function renderizarProjetos() {
 
     const especialidadesHtml = especialidadesDoProjeto.length
       ? especialidadesDoProjeto.map(function (e) {
-          return `<div class="qty-row"><div class="nome">${e.nome_especialidade}</div><div class="hint" style="margin:0;">D: ${e.qtd_prevista_diurno} · N: ${e.qtd_prevista_noturno}</div></div>`;
+          return `
+            <div class="qty-row">
+              <div class="nome">${e.nome_especialidade}</div>
+              <div class="hint" style="margin:0;">Diurno: ${e.qtd_prevista_diurno} · Noturno: ${e.qtd_prevista_noturno}</div>
+              <button onclick="excluirEspecialidade('${e.id_especialidade}')" title="Excluir especialidade" style="background:none; border:none; color:var(--danger); font-size:0.95rem; cursor:pointer; padding:2px 6px;">🗑️</button>
+            </div>
+          `;
         }).join('')
       : '<div class="hint">Nenhuma especialidade adicionada a este projeto ainda.</div>';
 
@@ -172,11 +198,19 @@ function renderizarProjetos() {
         </div>
         <div class="projeto-detalhe">
           ${especialidadesHtml}
-          <div style="display:flex; gap:8px; margin-top:10px;">
-            <input type="text" placeholder="Nova especialidade" class="proj-esp-nome" data-projeto="${p.id_projeto}" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--border);">
-            <input type="number" min="0" value="0" placeholder="D" class="proj-esp-diurno" data-projeto="${p.id_projeto}" style="width:50px; padding:8px; border-radius:8px; border:1px solid var(--border);">
-            <input type="number" min="0" value="0" placeholder="N" class="proj-esp-noturno" data-projeto="${p.id_projeto}" style="width:50px; padding:8px; border-radius:8px; border:1px solid var(--border);">
-            <button onclick="adicionarEspecialidadeProjeto('${p.id_projeto}')" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:#fff;">+</button>
+          <div style="margin-top:10px;">
+            <input type="text" placeholder="Nome da nova especialidade" class="proj-esp-nome" data-projeto="${p.id_projeto}" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); margin-bottom:6px;">
+            <div style="display:flex; gap:8px; align-items:flex-end;">
+              <div style="flex:1;">
+                <div class="hint" style="margin:0 0 2px;">Diurno</div>
+                <input type="number" min="0" value="0" class="proj-esp-diurno" data-projeto="${p.id_projeto}" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border);">
+              </div>
+              <div style="flex:1;">
+                <div class="hint" style="margin:0 0 2px;">Noturno</div>
+                <input type="number" min="0" value="0" class="proj-esp-noturno" data-projeto="${p.id_projeto}" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border);">
+              </div>
+              <button class="btn-add-esp-projeto" data-projeto="${p.id_projeto}" onclick="adicionarEspecialidadeProjeto('${p.id_projeto}', this)" style="padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:#fff; white-space:nowrap;">Adicionar</button>
+            </div>
           </div>
         </div>
       </div>
@@ -185,6 +219,7 @@ function renderizarProjetos() {
 }
 
 document.getElementById('btnAddProjeto').addEventListener('click', async function () {
+  const botao = this;
   const nome = document.getElementById('novoProjNome').value.trim();
   const inicio = document.getElementById('novoProjInicio').value;
   const fim = document.getElementById('novoProjFim').value;
@@ -192,17 +227,26 @@ document.getElementById('btnAddProjeto').addEventListener('click', async functio
   if (!nome || !inicio || !fim) { mostrarAlerta('Preencha nome, início e fim do projeto.', 'error'); return; }
   if (inicio > fim) { mostrarAlerta('A data de início precisa ser antes da data de fim.', 'error'); return; }
 
-  const resp = await EscalexAPI.post('salvarProjeto', {
-    dados: { id_unidade: idUnidade, nome_projeto: nome, data_inicio: inicio, data_fim: fim }
-  });
+  botao.disabled = true;
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Criando…';
 
-  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
-  document.getElementById('novoProjNome').value = '';
-  mostrarAlerta('Projeto criado.', 'success');
-  carregarDetalhe();
+  try {
+    const resp = await EscalexAPI.post('salvarProjeto', {
+      dados: { id_unidade: idUnidade, nome_projeto: nome, data_inicio: inicio, data_fim: fim }
+    });
+
+    if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+    document.getElementById('novoProjNome').value = '';
+    mostrarAlerta('Projeto criado.', 'success');
+    carregarDetalhe();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
 });
 
-async function adicionarEspecialidadeProjeto(idProjeto) {
+async function adicionarEspecialidadeProjeto(idProjeto, botao) {
   const nomeInput = document.querySelector(`.proj-esp-nome[data-projeto="${idProjeto}"]`);
   const diurnoInput = document.querySelector(`.proj-esp-diurno[data-projeto="${idProjeto}"]`);
   const noturnoInput = document.querySelector(`.proj-esp-noturno[data-projeto="${idProjeto}"]`);
@@ -210,60 +254,89 @@ async function adicionarEspecialidadeProjeto(idProjeto) {
   const nome = nomeInput.value.trim();
   if (!nome) { mostrarAlerta('Informe o nome da especialidade do projeto.', 'error'); return; }
 
-  const resp = await EscalexAPI.post('salvarEspecialidade', {
-    dados: {
-      id_unidade: idUnidade,
-      id_projeto: idProjeto,
-      nome_especialidade: nome,
-      qtd_prevista_diurno: Number(diurnoInput.value),
-      qtd_prevista_noturno: Number(noturnoInput.value)
-    }
-  });
+  botao.disabled = true;
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Adicionando…';
 
-  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
-  mostrarAlerta('Especialidade adicionada ao projeto.', 'success');
-  carregarDetalhe();
+  try {
+    const resp = await EscalexAPI.post('salvarEspecialidade', {
+      dados: {
+        id_unidade: idUnidade,
+        id_projeto: idProjeto,
+        nome_especialidade: nome,
+        qtd_prevista_diurno: Number(diurnoInput.value),
+        qtd_prevista_noturno: Number(noturnoInput.value)
+      }
+    });
+
+    if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+    mostrarAlerta('Especialidade adicionada ao projeto.', 'success');
+    carregarDetalhe();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
 }
 document.getElementById('btnAddEspecialidade').addEventListener('click', async function () {
+  const botao = this;
   const nome = document.getElementById('novaEspNome').value.trim();
   if (!nome) { mostrarAlerta('Informe o nome da especialidade.', 'error'); return; }
 
-  const resp = await EscalexAPI.post('salvarEspecialidade', {
-    dados: {
-      id_unidade: idUnidade,
-      nome_especialidade: nome,
-      qtd_prevista_diurno: Number(document.getElementById('novaEspDiurno').value),
-      qtd_prevista_noturno: Number(document.getElementById('novaEspNoturno').value)
-    }
-  });
+  botao.disabled = true;
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Adicionando…';
 
-  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
-  document.getElementById('novaEspNome').value = '';
-  mostrarAlerta('Especialidade adicionada.', 'success');
-  carregarDetalhe();
+  try {
+    const resp = await EscalexAPI.post('salvarEspecialidade', {
+      dados: {
+        id_unidade: idUnidade,
+        nome_especialidade: nome,
+        qtd_prevista_diurno: Number(document.getElementById('novaEspDiurno').value),
+        qtd_prevista_noturno: Number(document.getElementById('novaEspNoturno').value)
+      }
+    });
+
+    if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+    document.getElementById('novaEspNome').value = '';
+    mostrarAlerta('Especialidade adicionada.', 'success');
+    carregarDetalhe();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
 });
 
 document.getElementById('btnAddUsuario').addEventListener('click', async function () {
+  const botao = this;
   const nome = document.getElementById('novoUsrNome').value.trim();
   if (!nome) { mostrarAlerta('Informe o nome do usuário.', 'error'); return; }
 
-  const resp = await EscalexAPI.post('criarUsuarioApp', {
-    dados: {
-      id_unidade: idUnidade,
-      nome_completo: nome,
-      matricula: document.getElementById('novoUsrMatricula').value,
-      registro_conselho: document.getElementById('novoUsrConselho').value,
-      funcao: document.getElementById('novoUsrFuncao').value
-    }
-  });
+  botao.disabled = true;
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Cadastrando…';
 
-  if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
-  mostrarAlerta(`Usuário criado: ${resp.data.username} (senha inicial: 123)`, 'success');
-  document.getElementById('novoUsrNome').value = '';
-  document.getElementById('novoUsrMatricula').value = '';
-  document.getElementById('novoUsrConselho').value = '';
-  document.getElementById('novoUsrFuncao').value = '';
-  carregarDetalhe();
+  try {
+    const resp = await EscalexAPI.post('criarUsuarioApp', {
+      dados: {
+        id_unidade: idUnidade,
+        nome_completo: nome,
+        matricula: document.getElementById('novoUsrMatricula').value,
+        registro_conselho: document.getElementById('novoUsrConselho').value,
+        funcao: document.getElementById('novoUsrFuncao').value
+      }
+    });
+
+    if (!resp.ok) { mostrarAlerta(resp.erro, 'error'); return; }
+    mostrarAlerta(`Usuário criado: ${resp.data.username} (senha inicial: 123)`, 'success');
+    document.getElementById('novoUsrNome').value = '';
+    document.getElementById('novoUsrMatricula').value = '';
+    document.getElementById('novoUsrConselho').value = '';
+    document.getElementById('novoUsrFuncao').value = '';
+    carregarDetalhe();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
 });
 
 // --- fiscalização ---
