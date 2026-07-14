@@ -156,37 +156,27 @@ async function carregarTendencia() {
     return;
   }
 
-  if (resp.data.modo === 'especialidade') {
-    renderizarGraficoPorEspecialidade(resp.data, container);
-  } else {
-    renderizarGraficoPercentual(resp.data, container);
-  }
-}
-
-function renderizarGraficoPercentual(data, container) {
-  const pontosValidos = data.pontos.filter(function (p) { return p.percentual !== null; });
-  if (pontosValidos.length === 0) {
-    container.innerHTML = '<div class="empty-state">Ainda não há dados suficientes nesse período.</div>';
-    return;
-  }
-  container.innerHTML = gerarGraficoTendenciaSVG(data.pontos);
+  renderizarGraficoPorEspecialidade(resp.data, container);
 }
 
 function renderizarGraficoPorEspecialidade(data, container) {
   if (!data.especialidades || data.especialidades.length === 0 || !data.intervaloInicio) {
-    container.innerHTML = '<div class="empty-state">Ainda não há registros dessa unidade nesse período.</div>';
+    container.innerHTML = '<div class="empty-state">Ainda não há registros nesse período.</div>';
     return;
   }
 
   const spanMs = new Date(data.intervaloFim).getTime() - new Date(data.intervaloInicio).getTime();
   const multiDia = spanMs > 24 * 60 * 60 * 1000;
+  const cabecalho = data.escopo === 'unidade'
+    ? data.unidade.nome
+    : 'Todas as unidades — soma das especialidades em comum';
 
-  container.innerHTML = `<div style="margin-bottom:8px; font-weight:600; color:var(--navy-700); font-size:0.85rem;">${data.unidade.nome}</div>` +
+  container.innerHTML = `<div style="margin-bottom:8px; font-weight:600; color:var(--navy-700); font-size:0.85rem;">${cabecalho}</div>` +
     data.especialidades.map(function (esp) {
       return `
-        <div style="margin-bottom:18px;">
+        <div style="margin-bottom:22px;">
           <div style="font-size:0.88rem; font-weight:600; margin-bottom:4px;">${esp.nome}</div>
-          ${gerarGraficoEspecialidadeSVG(esp, data.intervaloInicio, data.intervaloFim, multiDia)}
+          ${gerarGraficoEspecialidadeSVG(esp, data.intervaloInicio, data.intervaloFim, data.marcosTurno, multiDia)}
           <div class="hint" style="margin-top:2px;">Previsto: ${esp.previsto}</div>
         </div>
       `;
@@ -195,55 +185,14 @@ function renderizarGraficoPorEspecialidade(data, container) {
 
 const CORES_TENDENCIA = { verde: '#2f9e64', laranja: '#d9822b', vermelho: '#c94545' };
 
-function gerarGraficoTendenciaSVG(pontos) {
-  const largura = 900, altura = 180, margemBaixo = 30, margemTopo = 16, margemLados = 10;
-  const areaLargura = largura - margemLados * 2;
-
-  const validos = pontos.map(function (p, i) { return { i: i, percentual: p.percentual, rotulo: p.rotulo }; }).filter(function (p) { return p.percentual !== null; });
-  const escalaX = i => margemLados + (i / Math.max(pontos.length - 1, 1)) * areaLargura;
-  const escalaY = pct => (altura - margemBaixo) - (pct / 100) * (altura - margemBaixo - margemTopo);
-
-  let path = '';
-  validos.forEach(function (p, idx) {
-    const comando = idx === 0 ? 'M' : 'L';
-    path += `${comando}${escalaX(p.i).toFixed(1)},${escalaY(p.percentual).toFixed(1)} `;
-  });
-
-  const pontosSvg = validos.map(function (p) {
-    const cor = p.percentual >= 85 ? CORES_TENDENCIA.verde : (p.percentual >= 50 ? CORES_TENDENCIA.laranja : CORES_TENDENCIA.vermelho);
-    return `
-      <circle cx="${escalaX(p.i).toFixed(1)}" cy="${escalaY(p.percentual).toFixed(1)}" r="3.5" fill="${cor}"></circle>
-      <text x="${escalaX(p.i).toFixed(1)}" y="${(escalaY(p.percentual) - 8).toFixed(1)}" font-size="9" font-weight="700" fill="${cor}" text-anchor="middle">${p.percentual.toFixed(0)}%</text>
-    `;
-  }).join('');
-
-  const passo = Math.max(1, Math.ceil(pontos.length / 8));
-  let rotulosX = '';
-  pontos.forEach(function (p, i) {
-    if (i % passo !== 0 && i !== pontos.length - 1) return;
-    rotulosX += `<text x="${escalaX(i).toFixed(1)}" y="${altura - 8}" font-size="10" fill="#5b6773" text-anchor="middle">${p.rotulo}</text>`;
-  });
-
-  const linhasGuia = [0, 50, 85, 100].map(function (pct) {
-    return `<line x1="${margemLados}" y1="${escalaY(pct)}" x2="${largura - margemLados}" y2="${escalaY(pct)}" stroke="#eef1f4" stroke-width="1"></line>`;
-  }).join('');
-
-  return `
-    <svg viewBox="0 0 ${largura} ${altura}" style="width:100%; height:${altura}px; display:block;">
-      ${linhasGuia}
-      <path d="${path.trim()}" fill="none" stroke="#4f8fc4" stroke-width="2"></path>
-      ${pontosSvg}
-      ${rotulosX}
-    </svg>
-  `;
-}
-
 /**
  * Gráfico de degrau por especialidade (mesmo estilo do CTAI), com o número
- * de profissionais registrados como rótulo de dados em cada trecho.
+ * de profissionais registrados como rótulo de dados em cada trecho, marcos
+ * verticais indicando a troca de turno (diurno/noturno), e rótulos de
+ * horário mais detalhados (com anti-sobreposição em 2 linhas).
  */
-function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, multiDia) {
-  const largura = 900, altura = 90, margemBaixo = 22, margemTopo = 16;
+function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, marcosTurno, multiDia) {
+  const largura = 900, altura = 106, margemBaixo = 38, margemTopo = 16;
   const inicioMs = new Date(intervaloInicio).getTime();
   const fimMs = new Date(intervaloFim).getTime();
   const totalMs = fimMs - inicioMs || 1;
@@ -251,12 +200,16 @@ function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, multiD
   const maxY = Math.max(esp.previsto, ...esp.segmentos.map(function (s) { return s.quantidade; }), 1);
   const escalaX = t => ((new Date(t).getTime() - inicioMs) / totalMs) * largura;
   const escalaY = q => (altura - margemBaixo) - (q / maxY) * (altura - margemBaixo - margemTopo);
-  const formatarRotulo = t => multiDia
+  const formatarHora = t => multiDia
     ? new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' + new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     : new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   const yBaseEixo = altura - margemBaixo;
+  const yLabelLinha0 = altura - 20;
+  const yLabelLinha1 = altura - 6;
+
   let linhas = '';
+  const candidatosHorario = [{ x: 0, texto: formatarHora(intervaloInicio), anchor: 'start' }];
 
   esp.segmentos.forEach(function (seg, i) {
     const x1 = escalaX(seg.inicio), x2 = escalaX(seg.fim), y = escalaY(seg.quantidade);
@@ -272,23 +225,65 @@ function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, multiD
     if (i < esp.segmentos.length - 1) {
       const proximo = esp.segmentos[i + 1];
       linhas += `<line x1="${x2}" y1="${y}" x2="${x2}" y2="${escalaY(proximo.quantidade)}" stroke="#c7cdd4" stroke-width="1.5"></line>`;
+      candidatosHorario.push({ x: x2, texto: formatarHora(seg.fim), anchor: 'middle' });
     }
   });
 
-  const rotulosX = `
-    <text x="2" y="${altura - 6}" font-size="9" fill="#5b6773" text-anchor="start">${formatarRotulo(intervaloInicio)}</text>
-    <text x="${largura - 2}" y="${altura - 6}" font-size="9" fill="#5b6773" text-anchor="end">${formatarRotulo(intervaloFim)}</text>
-  `;
+  candidatosHorario.push({ x: largura, texto: formatarHora(intervaloFim), anchor: 'end' });
 
+  // divisórias verticais de troca de turno (diurno <-> noturno)
+  let divisoriasTurno = '';
+  (marcosTurno || []).forEach(function (marco) {
+    const x = escalaX(marco.inicio);
+    if (x <= 2 || x >= largura - 2) return; // não desenha em cima da própria borda
+    const corTurno = marco.turno === 'diurno' ? '#e8ac1f' : '#2e5c86';
+    divisoriasTurno += `<line x1="${x}" y1="${margemTopo - 4}" x2="${x}" y2="${yBaseEixo}" stroke="${corTurno}" stroke-width="1.2" stroke-dasharray="4,3"></line>`;
+    divisoriasTurno += `<text x="${x}" y="${margemTopo - 6}" font-size="8.5" font-weight="700" fill="${corTurno}" text-anchor="middle">${marco.turno === 'diurno' ? '☀️ diurno' : '🌙 noturno'}</text>`;
+  });
+
+  const marcacoesTempo = posicionarRotulosSemSobreposicao_(candidatosHorario, yLabelLinha0, yLabelLinha1);
   const linhaEixoBase = `<line x1="0" y1="${yBaseEixo}" x2="${largura}" y2="${yBaseEixo}" stroke="#e1e6ec" stroke-width="1"></line>`;
 
   return `
     <svg viewBox="0 0 ${largura} ${altura}" style="width:100%; height:${altura}px; display:block;">
       ${linhaEixoBase}
+      ${divisoriasTurno}
       ${linhas}
-      ${rotulosX}
+      ${marcacoesTempo}
     </svg>
   `;
+}
+
+/**
+ * Recebe rótulos candidatos (x, texto, anchor) e distribui em 2 "linhas"
+ * alternadas sempre que a largura estimada do texto invadiria o vizinho —
+ * evita um horário colar em cima do outro (mesma lógica usada no CTAI).
+ */
+function posicionarRotulosSemSobreposicao_(candidatos, yLinha0, yLinha1) {
+  const LARGURA_CHAR = 5.2;
+  const GAP_MINIMO = 4;
+
+  function caixaDoRotulo(c) {
+    const largura = c.texto.length * LARGURA_CHAR;
+    if (c.anchor === 'start') return [c.x, c.x + largura];
+    if (c.anchor === 'end') return [c.x - largura, c.x];
+    return [c.x - largura / 2, c.x + largura / 2];
+  }
+
+  const ordenados = candidatos.slice().sort(function (a, b) { return a.x - b.x; });
+  let fimLinha0 = -Infinity, fimLinha1 = -Infinity, svg = '';
+
+  ordenados.forEach(function (c) {
+    const caixa = caixaDoRotulo(c);
+    let linha;
+    if (caixa[0] >= fimLinha0 + GAP_MINIMO) { linha = 0; fimLinha0 = caixa[1]; }
+    else if (caixa[0] >= fimLinha1 + GAP_MINIMO) { linha = 1; fimLinha1 = caixa[1]; }
+    else { linha = fimLinha0 <= fimLinha1 ? 0 : 1; if (linha === 0) fimLinha0 = caixa[1]; else fimLinha1 = caixa[1]; }
+    const y = linha === 0 ? yLinha0 : yLinha1;
+    svg += `<text x="${c.x}" y="${y}" font-size="9" fill="#5b6773" text-anchor="${c.anchor}">${c.texto}</text>`;
+  });
+
+  return svg;
 }
 
 // --- inicialização e auto-refresh ---
