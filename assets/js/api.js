@@ -22,15 +22,17 @@ const EscalexAPI = {
 };
 
 // --- helpers de sessão local (apenas para manter o usuário logado na sessão do navegador) ---
+// "tipo" é opcional — usado pra manter sessões separadas entre módulos
+// (ex.: dashboard e ctai abertos em abas diferentes não se sobrescrevem).
 const EscalexSession = {
-  salvar(usuario) {
-    sessionStorage.setItem('escalex_usuario', JSON.stringify(usuario));
+  salvar(usuario, tipo) {
+    sessionStorage.setItem('escalex_usuario' + (tipo ? '_' + tipo : ''), JSON.stringify(usuario));
   },
-  obter() {
-    const raw = sessionStorage.getItem('escalex_usuario');
+  obter(tipo) {
+    const raw = sessionStorage.getItem('escalex_usuario' + (tipo ? '_' + tipo : ''));
     return raw ? JSON.parse(raw) : null;
   },
-  limpar() {
-    sessionStorage.removeItem('escalex_usuario');
+  limpar(tipo) {
+    sessionStorage.removeItem('escalex_usuario' + (tipo ? '_' + tipo : ''));
   }
 };
