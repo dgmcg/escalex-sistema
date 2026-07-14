@@ -11,6 +11,7 @@ Scaffold inicial: frontend estático (GitHub Pages) + backend Apps Script (API) 
 - **`arquivo.html`** + `assets/js/arquivo.js` — aba de consulta (somente leitura) dos plantões já encerrados: quantidade final por especialidade, observações com horário, status de fiscalização (total/ressalva/pendente), e links pra foto/assinatura/mapa. Toque no card expande os detalhes.
 - `apps-script/Arquivo.gs` — backend da aba Arquivo: agrupa todo o histórico de um plantão (registro + atualizações) e retorna o estado final, excluindo automaticamente o turno vigente (que continua só no formulário de registro).
 - **`apps-script/Alertas.gs`** — verificação automática (via trigger de tempo, a cada 30 min) que envia e-mail aos **usuários do app daquela unidade** quando o turno em andamento está atrasado (60+ min sem registro) — lembrete pra quem esqueceu, enquanto ainda dá tempo de registrar. Cada ocorrência só dispara um e-mail (controle na aba `Alertas_Enviados`).
+- **`apps-script/ConfigSistema.gs`** — configuração global do sistema (guardada via Script Properties, sem precisar de aba na planilha). Hoje só tem o **interruptor de alertas** (ativado/desativado), visível como um card no topo da tela de Unidades do CTAI (`ctai/unidades.html`) — útil pra desligar os e-mails durante testes ou antes de treinar uma unidade nova, sem precisar mexer no código.
 - `assets/css/style.css` — identidade visual (navy + dourado do brasão, tipografia Fraunces/Inter).
 - **`ctai/`** — módulo Gestão CTAI (web, separado do app):
   - `index.html` + `login-ctai.js` — login do gestor.
