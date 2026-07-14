@@ -104,14 +104,14 @@ Registro (e atualização) de plantão. Cada atualização gera nova linha com i
 | detalhes_json | string | |
 
 ## Aba: Alertas_Enviados
-Controla quais alertas de "plantão não preenchido" já foram enviados, pra não notificar o mesmo caso repetidas vezes a cada execução do trigger.
+Controla quais alertas de "plantão atrasado" já foram enviados (aos usuários do app da unidade), pra não notificar o mesmo caso repetidas vezes a cada execução do trigger.
 | Coluna | Tipo | Descrição |
 |---|---|---|
 | id_alerta | string (UUID) | chave primária |
 | id_unidade | string | FK -> Unidades |
 | data | string "yyyy-MM-dd" | data de referência do plantão alertado |
 | turno | string | diurno / noturno |
-| tipo | string | "atraso" (turno em andamento sem registro) ou "nao_preenchido" (turno encerrado sem registro) |
+| tipo | string | sempre "atraso" por enquanto (campo mantido para extensões futuras) |
 | enviado_em | datetime | |
 
 ---
