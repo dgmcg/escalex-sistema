@@ -58,3 +58,60 @@ document.getElementById('btnSalvarUnidade').addEventListener('click', async func
 });
 
 carregarUnidades();
+
+let alertasAtivosAtual = true;
+
+async function carregarConfigGlobal() {
+  const resp = await EscalexAPI.get('configSistema');
+  const textoStatus = document.getElementById('statusAlertasTexto');
+  const botao = document.getElementById('btnToggleAlertas');
+
+  if (!resp.ok) {
+    textoStatus.textContent = 'Não foi possível carregar essa configuração.';
+    botao.style.display = 'none';
+    return;
+  }
+
+  alertasAtivosAtual = resp.data.alertasAtivos;
+  atualizarUiConfigGlobal();
+}
+
+function atualizarUiConfigGlobal() {
+  const textoStatus = document.getElementById('statusAlertasTexto');
+  const botao = document.getElementById('btnToggleAlertas');
+  const card = document.getElementById('cardConfigGlobal');
+
+  if (alertasAtivosAtual) {
+    textoStatus.innerHTML = '🟢 Ativados — usuários recebem lembrete por e-mail quando esquecem de registrar.';
+    botao.textContent = 'Desativar';
+    card.style.borderLeft = '4px solid var(--success)';
+  } else {
+    textoStatus.innerHTML = '⚪ Desativados — ninguém recebe e-mail de lembrete no momento.';
+    botao.textContent = 'Ativar';
+    card.style.borderLeft = '4px solid var(--ink-soft)';
+  }
+}
+
+document.getElementById('btnToggleAlertas').addEventListener('click', async function () {
+  const botao = this;
+  const novoValor = !alertasAtivosAtual;
+
+  botao.disabled = true;
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Salvando…';
+
+  try {
+    const resp = await EscalexAPI.post('salvarConfigSistema', { dados: { alertasAtivos: novoValor } });
+    if (!resp.ok) {
+      document.getElementById('alertBox').innerHTML = `<div class="alert alert-error">${resp.erro}</div>`;
+      return;
+    }
+    alertasAtivosAtual = novoValor;
+    atualizarUiConfigGlobal();
+  } finally {
+    botao.disabled = false;
+    if (botao.textContent === 'Salvando…') botao.textContent = textoOriginal;
+  }
+});
+
+carregarConfigGlobal();
