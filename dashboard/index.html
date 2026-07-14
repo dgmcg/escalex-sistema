@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalex — Painel em Tempo Real</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  body { background: var(--bg); }
+  .container { max-width: 1100px; }
+
+  .live-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:0.72rem; font-weight:700; color: var(--success);
+    background:#eaf6ef; padding:4px 10px; border-radius:20px;
+  }
+  .live-dot { width:7px; height:7px; border-radius:50%; background: var(--success); animation: pulseLive 1.4s infinite; }
+  @keyframes pulseLive { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  .filtros { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:16px; }
+  .filtros .field { margin-bottom:0; min-width:160px; }
+  .filtros select { width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border); background:#fbfcfd; font-family: var(--font-body); }
+
+  .grid-unidades { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+  .unidade-card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow: var(--shadow-card); }
+  .unidade-card .cabecalho-u { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .unidade-card h3 { margin:0; font-size:1rem; color: var(--navy-900); font-family: var(--font-display); }
+  .unidade-card .sem-registro-aviso { font-size:0.76rem; color: var(--danger); font-weight:600; margin-bottom:8px; }
+
+  .esp-linha { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:0.85rem; border-bottom:1px dashed var(--border); }
+  .esp-linha:last-child { border-bottom:none; }
+  .esp-valor { font-weight:700; }
+  .esp-valor.completo { color: var(--success); }
+  .esp-valor.excedente { color: var(--warning); }
+  .esp-valor.faltante { color: var(--danger); }
+  .esp-valor.sem_registro { color: var(--ink-soft); }
+
+  .periodo-tabs { display:flex; gap:8px; margin-bottom:14px; }
+  .periodo-tabs button { flex:1; padding:9px; border-radius:10px; border:1.5px solid var(--border); background:#fff; font-size:0.82rem; font-weight:600; color: var(--ink-soft); cursor:pointer; }
+  .periodo-tabs button.active { background: var(--navy-700); color:#fff; border-color: var(--navy-700); }
+
+  .empty-state { text-align:center; padding:30px; color: var(--ink-soft); font-size:0.9rem; }
+</style>
+</head>
+<body>
+
+<div class="topbar" style="display:flex; justify-content:space-between; align-items:center;">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" stroke-width="1.6"/>
+      <path d="M3 9H21" stroke="#fff" stroke-width="1.6"/>
+      <path d="M8 2.5V5.5M16 2.5V5.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>ESCALEX</h1>
+      <div class="subtitle">Painel de acompanhamento em tempo real</div>
+    </div>
+  </div>
+  <span class="live-badge"><span class="live-dot"></span>AO VIVO</span>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="filtros">
+      <div class="field">
+        <label for="filtroUnidade">Unidade</label>
+        <select id="filtroUnidade"><option value="">Todas as unidades</option></select>
+      </div>
+      <div class="field">
+        <label for="filtroStatus">Mostrar</label>
+        <select id="filtroStatus">
+          <option value="">Todas as especialidades</option>
+          <option value="faltante">Só faltantes</option>
+          <option value="excedente">Só excedentes</option>
+          <option value="sem_registro">Só sem registro</option>
+        </select>
+      </div>
+      <div class="field" style="margin-left:auto;">
+        <button class="btn btn-secondary" id="btnExportarCsv" style="width:auto;">⬇️ Exportar CSV</button>
+      </div>
+    </div>
+    <div class="hint" id="ultimaAtualizacao" style="margin-bottom:0;">Carregando…</div>
+  </div>
+
+  <div id="gridUnidades" class="grid-unidades"></div>
+
+  <div class="card" style="margin-top:20px;">
+    <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Tendência de cobertura</h3>
+    <div class="periodo-tabs">
+      <button data-periodo="4h">Últimas 4h</button>
+      <button data-periodo="24h" class="active">Últimas 24h</button>
+      <button data-periodo="7d">7 dias</button>
+      <button data-periodo="30d">30 dias</button>
+    </div>
+    <div id="graficoTendencia">Carregando…</div>
+  </div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="assets/js/dashboard.js"></script>
+</body>
+</html>
