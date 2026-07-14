@@ -12,6 +12,9 @@ Scaffold inicial: frontend estático (GitHub Pages) + backend Apps Script (API) 
 - `apps-script/Arquivo.gs` — backend da aba Arquivo: agrupa todo o histórico de um plantão (registro + atualizações) e retorna o estado final, excluindo automaticamente o turno vigente (que continua só no formulário de registro).
 - **`apps-script/Alertas.gs`** — verificação automática (via trigger de tempo, a cada 30 min) que envia e-mail aos **usuários do app daquela unidade** quando o turno em andamento está atrasado (60+ min sem registro) — lembrete pra quem esqueceu, enquanto ainda dá tempo de registrar. Cada ocorrência só dispara um e-mail (controle na aba `Alertas_Enviados`).
 - **`apps-script/ConfigSistema.gs`** — configuração global do sistema (guardada via Script Properties, sem precisar de aba na planilha). Hoje só tem o **interruptor de alertas** (ativado/desativado), visível como um card no topo da tela de Unidades do CTAI (`ctai/unidades.html`) — útil pra desligar os e-mails durante testes ou antes de treinar uma unidade nova, sem precisar mexer no código.
+- **`apps-script/Dashboard.gs`** — backend do painel público (agora **com login**). Tempo real: quadro por unidade com quantidade registrada x prevista por especialidade no turno vigente. Tendência: 5 opções de período — **plantão vigente** (padrão ao abrir, mostra a evolução desde o início do turno atual até agora), **último plantão fechado**, **7 dias**, **30 dias** e **período específico** (data De/Até escolhida livremente). Quando um filtro de unidade é aplicado, o gráfico muda pra mostrar a **quantidade registrada por especialidade** (rótulo de dados com o número, igual ao gráfico da fiscalização do CTAI); sem filtro de unidade, agrega todas num gráfico de % de cobertura média.
+- **`dashboard/`** — pasta separada, **agora com login próprio** (`index.html` = login, `painel.html` = o painel de fato). Usuários são cadastrados no módulo Gestão Geral.
+- **`geral/`** — módulo mínimo de **Gestão Geral do Sistema**: login (reaproveita as credenciais de gestor do CTAI — ver nota de arquitetura abaixo) e uma tela (`usuarios-dashboard.html`) pra criar, resetar senha e ativar/desativar usuários do Dashboard.
 - `assets/css/style.css` — identidade visual (navy + dourado do brasão, tipografia Fraunces/Inter).
 - **`ctai/`** — módulo Gestão CTAI (web, separado do app):
   - `index.html` + `login-ctai.js` — login do gestor.
@@ -35,10 +38,14 @@ Scaffold inicial: frontend estático (GitHub Pages) + backend Apps Script (API) 
 ## Ainda não construído (próximas fases)
 - Deleção/inativação de unidades e usuários pela interface (hoje só criação/edição).
 - Verificação preditiva de similaridade de assinatura (heurística — não é biometria forense).
-- Módulos Dashboards, Gestão Documental e Gestão Geral do Sistema.
+- Módulos Gestão Documental e Gestão Geral do Sistema.
 
 ## Decisões já tomadas (conforme conversa)
 - Substitui totalmente o sistema anterior em AppSheet/Power BI.
 - Piloto inicial com 1-2 unidades antes de expandir.
 - Dashboard com refresh de 20-30s (sem necessidade de real-time instantâneo).
 - Teste em Android real assim que o piloto estiver publicado.
+- O painel `dashboard/` agora **exige login** — usuários próprios, cadastrados em `geral/` (Gestão Geral do Sistema).
+
+## Nota de arquitetura: login da Gestão Geral
+O módulo `geral/` (Gestão Geral do Sistema) hoje **reaproveita as mesmas credenciais de gestor do CTAI** pra logar — não criei um terceiro conjunto de usuários "admin dos admins" separado. Na prática, qualquer gestor CTAI também consegue entrar em `geral/` e cadastrar usuários do Dashboard. Isso foi uma simplificação pragmática pra não multiplicar sistemas de login sem necessidade clara ainda. Se no futuro você quiser um nível de acesso hierarquicamente separado (ex.: só um "super-admin" pode cadastrar usuários de Dashboard, diferente dos gestores operacionais do CTAI), é só avisar que eu separo isso numa aba de usuários própria.
