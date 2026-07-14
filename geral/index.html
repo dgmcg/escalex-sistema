@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalex — Gestão Geral do Sistema</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-box { max-width: 380px; width: 100%; padding: 0 18px; }
+  .login-box .eyebrow { text-align:center; color: var(--navy-700); font-size:0.75rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+  .login-box h1 { text-align:center; font-family: var(--font-display); color: var(--navy-900); margin: 0 0 24px; }
+</style>
+</head>
+<body>
+<div class="login-box">
+  <div class="eyebrow">Escalex</div>
+  <h1>Gestão Geral do Sistema</h1>
+  <div class="card">
+    <p class="hint" style="margin-top:0;">Use as mesmas credenciais de gestor do CTAI.</p>
+    <div id="alertBox"></div>
+    <form id="formLoginGeral">
+      <div class="field">
+        <label for="username">Usuário</label>
+        <input type="text" id="username" required>
+      </div>
+      <div class="field">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" required>
+      </div>
+      <button type="submit" class="btn btn-primary" id="btnEntrar">Entrar</button>
+    </form>
+  </div>
+</div>
+<script src="../assets/js/api.js"></script>
+<script src="assets/js/login-geral.js"></script>
+</body>
+</html>

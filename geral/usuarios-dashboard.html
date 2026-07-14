@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalex — Usuários do Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  .container { max-width: 640px; }
+  .usuario-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); font-size:0.88rem; }
+  .usuario-row:last-child { border-bottom:none; }
+  .usuario-row .nome { font-weight:600; }
+  .usuario-row .meta { color: var(--ink-soft); font-size:0.78rem; }
+  .usuario-row .acoes button { font-size:0.75rem; padding:5px 10px; border-radius:8px; border:1px solid var(--border); background:#fff; margin-left:6px; }
+  .badge-inativo { background:#f7e9e9; color: var(--danger); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-left:8px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <h1>ESCALEX</h1>
+    <div class="subtitle">Gestão Geral do Sistema — Usuários do Dashboard</div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="alertBox"></div>
+
+  <div class="card">
+    <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Usuários com acesso ao Dashboard</h3>
+    <div id="listaUsuarios">Carregando…</div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0; font-size:0.95rem; color: var(--navy-700);">Novo usuário</h3>
+    <div class="field">
+      <label for="novoNome">Nome completo</label>
+      <input type="text" id="novoNome" placeholder="Nome e sobrenome">
+    </div>
+    <div class="field">
+      <label for="novaSenha">Senha (deixe em branco para usar "123")</label>
+      <input type="text" id="novaSenha" placeholder="123">
+    </div>
+    <button class="btn btn-primary" id="btnCriarUsuario">Criar usuário</button>
+  </div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="assets/js/usuarios-dashboard.js"></script>
+</body>
+</html>
