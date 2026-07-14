@@ -67,6 +67,18 @@ Usuários do módulo CTAI (podem existir vários gestores).
 | email_corporativo | string | |
 | ativo | boolean | |
 
+## Aba: Usuarios_Dashboard
+Usuários do painel público (módulo Dashboard), cadastrados via Gestão Geral do Sistema.
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| id_usuario_dash | string (UUID) | chave primária |
+| nome_completo | string | |
+| username | string | |
+| senha_hash | string | |
+| salt | string | |
+| ativo | boolean | |
+| criado_em | datetime | |
+
 ## Aba: Plantoes
 Registro (e atualização) de plantão. Cada atualização gera nova linha com id_registro_anterior apontando pra anterior — mantém histórico completo em vez de sobrescrever.
 | Coluna | Tipo | Descrição |
