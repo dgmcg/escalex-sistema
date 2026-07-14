@@ -10,6 +10,7 @@ Scaffold inicial: frontend estático (GitHub Pages) + backend Apps Script (API) 
 - `plantao.html` + `plantao.js` + `signature.js` — formulário completo: especialidades dinâmicas, foto (câmera **e** galeria separadas), assinatura em canvas, geolocalização com mapa visual (Leaflet), campos automáticos não editáveis. Agora com barra de navegação inferior (Plantão atual / Arquivo) e **especialidades de projetos vigentes exibidas separadamente** (cards com borda dourada) quando há um projeto de sazonalidade ativo pra unidade naquela data.
 - **`arquivo.html`** + `assets/js/arquivo.js` — aba de consulta (somente leitura) dos plantões já encerrados: quantidade final por especialidade, observações com horário, status de fiscalização (total/ressalva/pendente), e links pra foto/assinatura/mapa. Toque no card expande os detalhes.
 - `apps-script/Arquivo.gs` — backend da aba Arquivo: agrupa todo o histórico de um plantão (registro + atualizações) e retorna o estado final, excluindo automaticamente o turno vigente (que continua só no formulário de registro).
+- **`apps-script/Alertas.gs`** — verificação automática (via trigger de tempo, a cada 30 min) que envia e-mail pros gestores quando: (a) um turno em andamento está atrasado (60+ min sem registro) ou (b) o turno anterior encerrou sem nenhum registro. Cada caso só dispara um e-mail (controle na aba `Alertas_Enviados`).
 - `assets/css/style.css` — identidade visual (navy + dourado do brasão, tipografia Fraunces/Inter).
 - **`ctai/`** — módulo Gestão CTAI (web, separado do app):
   - `index.html` + `login-ctai.js` — login do gestor.
@@ -33,7 +34,6 @@ Scaffold inicial: frontend estático (GitHub Pages) + backend Apps Script (API) 
 ## Ainda não construído (próximas fases)
 - Deleção/inativação de unidades e usuários pela interface (hoje só criação/edição).
 - Verificação preditiva de similaridade de assinatura (heurística — não é biometria forense).
-- Alerta automático de plantão não preenchido.
 - Módulos Dashboards, Gestão Documental e Gestão Geral do Sistema.
 
 ## Decisões já tomadas (conforme conversa)
