@@ -121,9 +121,21 @@ document.querySelectorAll('.periodo-tabs button').forEach(function (btn) {
       return; // espera o usuário clicar em "Aplicar"
     }
     blocoPersonalizado.classList.remove('aberto');
+    document.getElementById('blocoTurnoUnico').style.display = 'none';
     carregarTendencia();
   });
 });
+
+// mostra o seletor de turno só quando "De" e "Até" forem o mesmo dia
+function atualizarVisibilidadeTurnoUnico() {
+  const dataInicio = document.getElementById('dataInicioPersonalizado').value;
+  const dataFim = document.getElementById('dataFimPersonalizado').value;
+  const bloco = document.getElementById('blocoTurnoUnico');
+  bloco.style.display = (dataInicio && dataFim && dataInicio === dataFim) ? 'block' : 'none';
+  if (bloco.style.display === 'none') document.getElementById('turnoUnico').value = '';
+}
+document.getElementById('dataInicioPersonalizado').addEventListener('change', atualizarVisibilidadeTurnoUnico);
+document.getElementById('dataFimPersonalizado').addEventListener('change', atualizarVisibilidadeTurnoUnico);
 
 document.getElementById('btnAplicarPersonalizado').addEventListener('click', carregarTendencia);
 
@@ -148,6 +160,10 @@ async function carregarTendencia() {
     }
     params.dataInicio = dataInicio;
     params.dataFim = dataFim;
+    if (dataInicio === dataFim) {
+      const turno = document.getElementById('turnoUnico').value;
+      if (turno) params.turno = turno;
+    }
   }
 
   const resp = await EscalexAPI.get('dashboardTendencia', params);
@@ -156,8 +172,18 @@ async function carregarTendencia() {
     return;
   }
 
-  renderizarGraficoPorEspecialidade(resp.data, container);
+  if (resp.data.modo === 'resumo') {
+    renderizarGraficoResumo(resp.data, container);
+  } else {
+    renderizarGraficoPorEspecialidade(resp.data, container);
+  }
 }
+
+const CORES_TENDENCIA = { verde: '#2f9e64', laranja: '#d9822b', vermelho: '#c94545', previsto: '#5b6773' };
+const COR_FUNDO_DIURNO = 'rgba(232,172,31,0.06)';
+const COR_FUNDO_NOTURNO = 'rgba(46,92,134,0.10)';
+
+/* ============ MODO "especialidade": linha detalhada (até 4 plantões) ============ */
 
 function renderizarGraficoPorEspecialidade(data, container) {
   if (!data.especialidades || data.especialidades.length === 0 || !data.intervaloInicio) {
@@ -177,27 +203,28 @@ function renderizarGraficoPorEspecialidade(data, container) {
         <div style="margin-bottom:22px;">
           <div style="font-size:0.88rem; font-weight:600; margin-bottom:4px;">${esp.nome}</div>
           ${gerarGraficoEspecialidadeSVG(esp, data.intervaloInicio, data.intervaloFim, data.marcosTurno, multiDia)}
-          <div class="hint" style="margin-top:2px;">Previsto: ${esp.previsto}</div>
         </div>
       `;
     }).join('');
 }
 
-const CORES_TENDENCIA = { verde: '#2f9e64', laranja: '#d9822b', vermelho: '#c94545' };
-
 /**
- * Gráfico de degrau por especialidade (mesmo estilo do CTAI), com o número
- * de profissionais registrados como rótulo de dados em cada trecho, marcos
- * verticais indicando a troca de turno (diurno/noturno), e rótulos de
- * horário mais detalhados (com anti-sobreposição em 2 linhas).
+ * Gráfico de degrau por especialidade: fundo diferenciado por turno (diurno
+ * mais claro, noturno mais escuro), divisória + ícone de sol/lua na troca de
+ * turno, linha do previsto acompanhando o gráfico inteiro, quantidade como
+ * rótulo de dados, e horários com anti-sobreposição.
  */
 function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, marcosTurno, multiDia) {
-  const largura = 900, altura = 106, margemBaixo = 38, margemTopo = 16;
+  const largura = 900, altura = 112, margemBaixo = 38, margemTopo = 20;
   const inicioMs = new Date(intervaloInicio).getTime();
   const fimMs = new Date(intervaloFim).getTime();
   const totalMs = fimMs - inicioMs || 1;
 
-  const maxY = Math.max(esp.previsto, ...esp.segmentos.map(function (s) { return s.quantidade; }), 1);
+  const maxY = Math.max(
+    Math.max.apply(null, esp.segmentos.map(function (s) { return s.previsto; }).concat([0])),
+    Math.max.apply(null, esp.segmentos.map(function (s) { return s.quantidade; }).concat([0])),
+    1
+  );
   const escalaX = t => ((new Date(t).getTime() - inicioMs) / totalMs) * largura;
   const escalaY = q => (altura - margemBaixo) - (q / maxY) * (altura - margemBaixo - margemTopo);
   const formatarHora = t => multiDia
@@ -208,7 +235,18 @@ function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, marcos
   const yLabelLinha0 = altura - 20;
   const yLabelLinha1 = altura - 6;
 
+  // fundo por turno (bandas alternadas, noturno mais escuro)
+  let fundos = '';
+  (marcosTurno || []).forEach(function (marco) {
+    const x1 = Math.max(0, escalaX(marco.inicio));
+    const x2 = Math.min(largura, escalaX(marco.fim));
+    if (x2 <= x1) return;
+    const cor = marco.turno === 'diurno' ? COR_FUNDO_DIURNO : COR_FUNDO_NOTURNO;
+    fundos += `<rect x="${x1}" y="${margemTopo - 10}" width="${x2 - x1}" height="${yBaseEixo - margemTopo + 10}" fill="${cor}"></rect>`;
+  });
+
   let linhas = '';
+  let linhaPrevisto = '';
   const candidatosHorario = [{ x: 0, texto: formatarHora(intervaloInicio), anchor: 'start' }];
 
   esp.segmentos.forEach(function (seg, i) {
@@ -220,6 +258,13 @@ function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, marcos
       const xMeio = (x1 + x2) / 2;
       const yTexto = y > margemTopo + 8 ? y - 6 : y + 12;
       linhas += `<text x="${xMeio}" y="${yTexto}" font-size="10" font-weight="700" fill="${cor}" text-anchor="middle">${seg.quantidade}</text>`;
+    }
+
+    // linha do previsto, acompanhando o mesmo trecho (tracejada)
+    const yPrevisto = escalaY(seg.previsto);
+    linhaPrevisto += `<line x1="${x1}" y1="${yPrevisto}" x2="${x2}" y2="${yPrevisto}" stroke="${CORES_TENDENCIA.previsto}" stroke-width="1.3" stroke-dasharray="3,3"></line>`;
+    if (i === 0 || seg.previsto !== esp.segmentos[i - 1].previsto) {
+      linhaPrevisto += `<text x="${x1 + 3}" y="${yPrevisto - 3}" font-size="8.5" fill="${CORES_TENDENCIA.previsto}" text-anchor="start">prev. ${seg.previsto}</text>`;
     }
 
     if (i < esp.segmentos.length - 1) {
@@ -235,10 +280,10 @@ function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, marcos
   let divisoriasTurno = '';
   (marcosTurno || []).forEach(function (marco) {
     const x = escalaX(marco.inicio);
-    if (x <= 2 || x >= largura - 2) return; // não desenha em cima da própria borda
+    if (x <= 2 || x >= largura - 2) return;
     const corTurno = marco.turno === 'diurno' ? '#e8ac1f' : '#2e5c86';
-    divisoriasTurno += `<line x1="${x}" y1="${margemTopo - 4}" x2="${x}" y2="${yBaseEixo}" stroke="${corTurno}" stroke-width="1.2" stroke-dasharray="4,3"></line>`;
-    divisoriasTurno += `<text x="${x}" y="${margemTopo - 6}" font-size="8.5" font-weight="700" fill="${corTurno}" text-anchor="middle">${marco.turno === 'diurno' ? '☀️ diurno' : '🌙 noturno'}</text>`;
+    divisoriasTurno += `<line x1="${x}" y1="${margemTopo - 8}" x2="${x}" y2="${yBaseEixo}" stroke="${corTurno}" stroke-width="1.2" stroke-dasharray="4,3"></line>`;
+    divisoriasTurno += `<text x="${x}" y="${margemTopo - 10}" font-size="8.5" font-weight="700" fill="${corTurno}" text-anchor="middle">${marco.turno === 'diurno' ? '☀️ diurno' : '🌙 noturno'}</text>`;
   });
 
   const marcacoesTempo = posicionarRotulosSemSobreposicao_(candidatosHorario, yLabelLinha0, yLabelLinha1);
@@ -246,8 +291,10 @@ function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, marcos
 
   return `
     <svg viewBox="0 0 ${largura} ${altura}" style="width:100%; height:${altura}px; display:block;">
+      ${fundos}
       ${linhaEixoBase}
       ${divisoriasTurno}
+      ${linhaPrevisto}
       ${linhas}
       ${marcacoesTempo}
     </svg>
@@ -257,7 +304,7 @@ function gerarGraficoEspecialidadeSVG(esp, intervaloInicio, intervaloFim, marcos
 /**
  * Recebe rótulos candidatos (x, texto, anchor) e distribui em 2 "linhas"
  * alternadas sempre que a largura estimada do texto invadiria o vizinho —
- * evita um horário colar em cima do outro (mesma lógica usada no CTAI).
+ * evita um horário colar em cima do outro.
  */
 function posicionarRotulosSemSobreposicao_(candidatos, yLinha0, yLinha1) {
   const LARGURA_CHAR = 5.2;
@@ -284,6 +331,87 @@ function posicionarRotulosSemSobreposicao_(candidatos, yLinha0, yLinha1) {
   });
 
   return svg;
+}
+
+/* ============ MODO "resumo": 1 valor por turno/dia (mais de 4 plantões) ============ */
+
+function renderizarGraficoResumo(data, container) {
+  if (!data.especialidades || data.especialidades.length === 0) {
+    container.innerHTML = '<div class="empty-state">Ainda não há registros nesse período.</div>';
+    return;
+  }
+
+  const cabecalho = data.escopo === 'unidade'
+    ? data.unidade.nome
+    : 'Todas as unidades — soma das especialidades em comum';
+
+  container.innerHTML = `<div style="margin-bottom:8px; font-weight:600; color:var(--navy-700); font-size:0.85rem;">${cabecalho}</div>` +
+    `<p class="hint" style="margin-top:0;">Período longo — mostrando o último valor registrado em cada plantão, em vez da variação por horário.</p>` +
+    data.especialidades.map(function (esp) {
+      return `
+        <div style="margin-bottom:26px;">
+          <div style="font-size:0.88rem; font-weight:600; margin-bottom:4px;">${esp.nome}</div>
+          ${gerarGraficoResumoSVG(esp)}
+        </div>
+      `;
+    }).join('');
+}
+
+/**
+ * Um valor por turno/dia (barras), com fundo/ícone diferenciando diurno de
+ * noturno, e o previsto marcado como um tracinho na altura certa de cada barra.
+ */
+function gerarGraficoResumoSVG(esp) {
+  const pontos = esp.pontos;
+  const largura = 900, altura = 130, margemBaixo = 34, margemTopo = 20, margemLados = 6;
+  const areaLargura = largura - margemLados * 2;
+  const larguraColuna = areaLargura / pontos.length;
+  const larguraBarra = Math.min(larguraColuna * 0.5, 34);
+
+  const maxY = Math.max(
+    Math.max.apply(null, pontos.map(function (p) { return p.previsto; }).concat([0])),
+    Math.max.apply(null, pontos.map(function (p) { return p.quantidade; }).concat([0])),
+    1
+  );
+  const yBase = altura - margemBaixo;
+  const escalaY = q => yBase - (q / maxY) * (yBase - margemTopo);
+
+  let svgConteudo = '';
+
+  pontos.forEach(function (p, i) {
+    const xColuna = margemLados + i * larguraColuna;
+    const xCentro = xColuna + larguraColuna / 2;
+    const corFundo = p.turno === 'diurno' ? COR_FUNDO_DIURNO : COR_FUNDO_NOTURNO;
+    svgConteudo += `<rect x="${xColuna}" y="${margemTopo - 10}" width="${larguraColuna}" height="${yBase - margemTopo + 10}" fill="${corFundo}"></rect>`;
+
+    if (i > 0) {
+      svgConteudo += `<line x1="${xColuna}" y1="${margemTopo - 10}" x2="${xColuna}" y2="${yBase}" stroke="#e1e6ec" stroke-width="1"></line>`;
+    }
+
+    const corBarra = p.quantidade >= p.previsto ? CORES_TENDENCIA.verde : CORES_TENDENCIA.vermelho;
+    const yBarraTopo = escalaY(p.quantidade);
+    const xBarra = xCentro - larguraBarra / 2;
+    svgConteudo += `<rect x="${xBarra}" y="${yBarraTopo}" width="${larguraBarra}" height="${yBase - yBarraTopo}" rx="3" fill="${corBarra}"></rect>`;
+    svgConteudo += `<text x="${xCentro}" y="${yBarraTopo - 6}" font-size="10" font-weight="700" fill="${corBarra}" text-anchor="middle">${p.quantidade}</text>`;
+
+    // tracinho do previsto na altura certa
+    const yPrevisto = escalaY(p.previsto);
+    svgConteudo += `<line x1="${xBarra - 4}" y1="${yPrevisto}" x2="${xBarra + larguraBarra + 4}" y2="${yPrevisto}" stroke="${CORES_TENDENCIA.previsto}" stroke-width="1.5" stroke-dasharray="2,2"></line>`;
+
+    // rótulo embaixo: data + ícone de turno
+    const dataCurta = p.data.slice(8, 10) + '/' + p.data.slice(5, 7);
+    svgConteudo += `<text x="${xCentro}" y="${altura - 20}" font-size="9" fill="#5b6773" text-anchor="middle">${dataCurta}</text>`;
+    svgConteudo += `<text x="${xCentro}" y="${altura - 7}" font-size="10" text-anchor="middle">${p.turno === 'diurno' ? '☀️' : '🌙'}</text>`;
+  });
+
+  const linhaEixoBase = `<line x1="0" y1="${yBase}" x2="${largura}" y2="${yBase}" stroke="#e1e6ec" stroke-width="1"></line>`;
+
+  return `
+    <svg viewBox="0 0 ${largura} ${altura}" style="width:100%; height:${altura}px; display:block;">
+      ${svgConteudo}
+      ${linhaEixoBase}
+    </svg>
+  `;
 }
 
 // --- inicialização e auto-refresh ---
