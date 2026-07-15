@@ -417,4 +417,7 @@ function gerarGraficoResumoSVG(esp) {
 // --- inicialização e auto-refresh ---
 carregarTempoReal();
 carregarTendencia();
-setInterval(carregarTempoReal, 25000);
+setInterval(function () {
+  carregarTempoReal();
+  carregarTendencia();
+}, 25000);
